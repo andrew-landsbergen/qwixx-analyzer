@@ -17,12 +17,13 @@ captured, then it moves the piece furthest up the board such that that move woul
 progress, and if none of those moves are possible, it makes a random move.
 
 Arguments can be passed into the program to configure it. Here are the current options:
-[--games n]: the number of games to play
-[--size n]: the dimensions of the checkerboard (min 3x3, max 12x12)
-[--draw_limit n]: the maximum number of turns that may pass since the last capture and the last pawn move before a draw is declared
-[--display]: draw the checkerboard at the end of the game
-[--displayall]: draw the checkerboard after every move
-[--move_delay t]: the amount of time to wait between displaying the checkerboard after every move
+
+[--games n]: the number of games to play  
+[--size n]: the dimensions of the checkerboard (min 3x3, max 12x12)  
+[--draw_limit n]: the maximum number of turns that may pass since the last capture and the last pawn move before a draw is declared  
+[--display]: draw the checkerboard at the end of the game  
+[--displayall]: draw the checkerboard after every move  
+[--move_delay t]: the amount of time to wait between displaying the checkerboard after every move  
 [--time t]: the amount of time the MCTS agent is given to make its move
 
 # Things that still need work
