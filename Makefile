@@ -4,10 +4,10 @@ BUILD_DIR = build
 INCLUDE_DIR = include
 OBJ_DIR = obj
 
-OBJ = $(OBJ_DIR)/qwixx.o
+OBJ = $(OBJ_DIR)/qwixx.o $(OBJ_DIR)/game.o
 
 CXX = g++
-CXXFLAGS = -I$(INCLUDE_DIR) -Wall -Werror -std=c++20
+CXXFLAGS = -I$(INCLUDE_DIR) -Wall -Werror -Wpedantic -std=c++20
 
 $(BUILD_DIR)/qwixx : $(OBJ)
 	@mkdir -p $(BUILD_DIR)
