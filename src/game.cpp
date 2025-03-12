@@ -1,13 +1,17 @@
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <random>
 #include <span>
 
 #include "game.hpp"
+
+std::mt19937_64 rng;
 
 Scorepad::Scorepad() : m_rightmost_mark_indices{}, m_num_marks{}, m_penalties(0) {
     m_rightmost_mark_indices.fill(std::nullopt);
@@ -45,13 +49,15 @@ State::State(size_t numPlayers, size_t startingPlayer)
     : scorepads(numPlayers, Scorepad()), locks(false), curr_player(startingPlayer), num_locks(0), is_terminal(false) {}
 
 std::optional<size_t> Agent::make_move(std::span<const Move> moves) const {
-    const size_t moveIndex = rand() % (moves.size() + 1);
-    return moveIndex == 0 ? std::nullopt : std::optional<size_t>(moveIndex - 1);
+    std::uniform_int_distribution<size_t> dist(0, moves.size());
+    const size_t move_index = dist(rng);
+    return move_index == 0 ? std::nullopt : std::optional<size_t>(move_index - 1);
 };
 
 void roll_dice(std::span<int> rolls) {
+    static std::uniform_int_distribution<int> dist(1, 6);
     for (size_t i = 0; i < rolls.size(); ++i) {
-        rolls[i] = (rand() % 6) + 1;    // TODO: replace rand(), probably with mersenne twister
+        rolls[i] = dist(rng);
     }
 }
 
@@ -114,7 +120,8 @@ Game::Game(size_t num_players) {
         m_players.push_back(Agent());   // TODO: construct agents with different policies
     }
     
-    m_state = std::make_unique<State>(num_players, rand() % num_players);     // TODO: replace rand()
+    std::uniform_int_distribution<size_t> dist(0, num_players - 1);
+    m_state = std::make_unique<State>(num_players, dist(rng));
 }
 
 
@@ -190,7 +197,7 @@ std::vector<int> Game::compute_score() const {
 
 std::unique_ptr<GameData> Game::run() {        
     // Seed random number generator
-    std::srand(std::time(nullptr));     // TODO: replace
+    rng.seed(std::chrono::system_clock::now().time_since_epoch().count());
 
     // Initial colors of the colored dice. Colored dice may be removed during the game.
     std::vector<Color> dice = { Color::red, Color::yellow, Color::green, Color::blue };
