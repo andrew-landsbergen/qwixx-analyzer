@@ -19,7 +19,6 @@ namespace GameConstants {
     static constexpr size_t MAX_LEGAL_MOVES = 8;
     static constexpr int MIN_MARKS_FOR_LOCK = 5;
     static constexpr int MAX_PENALTIES = 4;
-    static constexpr int NO_MARK = std::numeric_limits<int>::min();
 }
 
 enum class ActionType {
@@ -41,23 +40,26 @@ struct Move {
 
 struct MoveContext {
     std::span<Color> dice;
-    std::span<unsigned int> rolls;  // TODO: consider changing to int and verifying that it must be in the range of 1 to 6 through other means
-    std::span<Move> legalMoves;
-    std::span<std::optional<Move>> registeredMoves;
+    std::span<int> rolls;
+    std::span<Move> legal_moves;
+    std::span<std::optional<Move>> registered_moves;
 };
 
 class Scorepad {
 public:
     Scorepad();
-    void markMove(const Move& move);
-    bool markPenalty();
-    unsigned int getRightmostMarkValue(Color color) const {     // TODO: consider int instead of unsigned int
-        return m_rightmostMarks[static_cast<size_t>(color)];
+    void mark_move(const Move& move);
+    inline bool mark_penalty();
+
+    std::optional<size_t> get_rightmost_mark_index(Color color) const {
+        return m_rightmost_mark_indices[static_cast<size_t>(color)];
     }
-    unsigned int getValueFromIndex(Color color, size_t index) const {   // TODO: " "
+
+    int get_value_from_index(Color color, size_t index) const {
         return m_rows[static_cast<size_t>(color)][index].first;
     }
-    constexpr size_t getIndexFromValue(Color color, unsigned int value) const {
+
+    constexpr size_t get_index_from_value(Color color, int value) const {
         if (color == Color::red || color == Color::yellow) {
             return value - 2;
         }
@@ -65,51 +67,58 @@ public:
             return 12 - value;
         }
     }
-    unsigned int getNumMarks(Color color) const {   // TODO: " "
-        return m_numMarks[static_cast<size_t>(color)];
+
+    int get_num_marks(Color color) const {
+        return m_num_marks[static_cast<size_t>(color)];
     }
-    int getNumPenalties() const {
+
+    int get_num_penalties() const {
         return m_penalties;
     }
 
 private:
-    std::array<std::array<std::pair<unsigned int, bool>, GameConstants::NUM_CELLS_PER_ROW>, GameConstants::NUM_ROWS> m_rows;    // TOOD: " "
-    std::array<unsigned int, GameConstants::NUM_ROWS> m_rightmostMarks;     // TODO: " "
-    std::array<unsigned int, GameConstants::NUM_ROWS> m_numMarks;   // TODO: " "
+    std::array<std::array<std::pair<int, bool>, GameConstants::NUM_CELLS_PER_ROW>, GameConstants::NUM_ROWS> m_rows;
+    std::array<std::optional<size_t>, GameConstants::NUM_ROWS> m_rightmost_mark_indices;
+    std::array<int, GameConstants::NUM_ROWS> m_num_marks;
     int m_penalties;
 };
 
 struct State {
     std::vector<Scorepad> scorepads;
     std::bitset<GameConstants::NUM_ROWS> locks;
-    size_t currPlayer;
-    int numLocks;
-    bool isTerminal;
+    size_t curr_player;
+    int num_locks;
+    bool is_terminal;
 
-    State(size_t numPlayers, size_t startingPlayer);
-};
-
-struct GameData {
-    std::vector<size_t> winners;
-    std::vector<int> finalScore;
-    std::unique_ptr<State> finalState;
+    State(size_t num_players, size_t starting_player);
 };
 
 class Agent {
 public:
-    std::optional<size_t> makeMove(std::span<const Move> moves, const State& state) const;
+    std::optional<size_t> make_move(std::span<const Move> moves) const;
+};
+
+struct GameData {
+    std::vector<size_t> winners;
+    std::vector<int> final_score;
+    std::unique_ptr<State> final_state;
 };
 
 class Game {
 public:
-    Game(size_t numPlayers);
+    Game(size_t num_players);
     std::unique_ptr<GameData> run();
-    void computeScore(std::vector<int>&);
+    std::vector<int> compute_score() const;
 private:
-    size_t m_numPlayers;
+    size_t m_num_players;
     std::unique_ptr<State> m_state;
     std::vector<Agent> m_players;
 
     template <ActionType A, typename F>
-    bool resolveAction(const MoveContext& ctxt, F lockAdded);
+    bool resolve_action(const MoveContext& ctxt, F lock_added);
 };
+
+void roll_dice(std::span<int> rolls);
+
+template <ActionType A>
+size_t generate_legal_moves(const MoveContext& ctxt, const Scorepad& scorepad);

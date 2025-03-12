@@ -7,7 +7,7 @@ OBJ_DIR = obj
 OBJ = $(OBJ_DIR)/qwixx.o $(OBJ_DIR)/game.o
 
 CXX = g++
-CXXFLAGS = -I$(INCLUDE_DIR) -Wall -Werror -Wpedantic -std=c++20 -g3 -O3
+CXXFLAGS = -I$(INCLUDE_DIR) -Wall -Werror -Wextra -Wpedantic -std=c++20 -g3 -O3
 
 $(BUILD_DIR)/qwixx : $(OBJ)
 	@mkdir -p $(BUILD_DIR)

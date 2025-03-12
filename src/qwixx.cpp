@@ -7,8 +7,8 @@ int main() {
     auto start = std::chrono::high_resolution_clock::now();
 
     for (int i = 0; i < 10; ++i) {
-        Game g = Game(4);
-        std::unique_ptr<GameData> stats = g.run();
+        Game game = Game(4);
+        std::unique_ptr<GameData> stats = game.run();
         (void) stats;   // discard for now
     }
 
