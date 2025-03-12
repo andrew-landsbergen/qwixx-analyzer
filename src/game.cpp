@@ -2,7 +2,6 @@
 #include <array>
 #include <cstdlib>
 #include <ctime>
-#include <functional>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -10,7 +9,9 @@
 
 #include "game.hpp"
 
-Scorepad::Scorepad() : m_rows{}, m_rightmostMarks{}, m_numMarks{}, m_penalties(0) {
+Scorepad::Scorepad() : m_rows{}, m_numMarks{}, m_penalties(0) {
+    m_rightmostMarks.fill(GameConstants::NO_MARK);
+    
     for (size_t i = 0; i < m_rows.size(); ++i) {
         for (size_t j = 0; j < m_rows[i].size(); ++j) {
             if (static_cast<Color>(i) == Color::red || static_cast<Color>(i) == Color::yellow) {
@@ -26,12 +27,12 @@ Scorepad::Scorepad() : m_rows{}, m_rightmostMarks{}, m_numMarks{}, m_penalties(0
 }
 
 void Scorepad::markMove(const Move& move) {
-    size_t color = static_cast<size_t>(move.row);
+    size_t color = static_cast<size_t>(move.color);
     size_t index = move.index;
     m_rows[color][index].second = true;
-    m_rightmostMarks[color] = getValueFromIndex(move.row, index);
+    m_rightmostMarks[color] = getValueFromIndex(move.color, index);
     m_numMarks[color] += 1;
-    if (index == (NUM_CELLS_PER_ROW - 1)) {
+    if (index == (GameConstants::NUM_CELLS_PER_ROW - 1)) {
         m_numMarks[color] += 1;
     }
 }
@@ -40,14 +41,14 @@ bool Scorepad::markPenalty() {
     return (++m_penalties >= 4);
 }
 
-State::State(size_t numPlayers, size_t startingPlayer) : scorepads{}, locks(false), currPlayer(startingPlayer), numLocks(0), terminal(false) {
+State::State(size_t numPlayers, size_t startingPlayer) : scorepads{}, locks(false), currPlayer(startingPlayer), numLocks(0), isTerminal(false) {
     scorepads.reserve(numPlayers);
     for (size_t i = 0; i < numPlayers; ++i) {
-        scorepads.push_back(std::make_unique<Scorepad>());
+        scorepads.push_back(Scorepad());
     }
 }
 
-std::optional<size_t> Agent::makeMove(std::span<const Move> moves, const State& state) {
+std::optional<size_t> Agent::makeMove(std::span<const Move> moves, const State& state) const {
     const size_t moveIndex = rand() % (moves.size() + 1);
     return moveIndex == 0 ? std::nullopt : std::optional<size_t>(moveIndex - 1);
 };
@@ -59,12 +60,12 @@ void rollDice(std::span<unsigned int> rolls) {
 }
 
 Game::Game(size_t numPlayers) : m_numPlayers(numPlayers) {
-    if (numPlayers < MIN_PLAYERS || numPlayers > MAX_PLAYERS) {
+    if (numPlayers < GameConstants::MIN_PLAYERS || numPlayers > GameConstants::MAX_PLAYERS) {
         throw std::runtime_error("Invalid player count.");
     }
 
     for (size_t i = 0; i < numPlayers; ++i) {
-        m_players.push_back(std::make_unique<Agent>());
+        m_players.push_back(Agent());
     }
     
     m_state = std::make_unique<State>(numPlayers, rand() % numPlayers);
@@ -78,10 +79,10 @@ size_t generateLegalMoves(const MoveContext& ctxt, const Scorepad& scorepad) {
         // Is the number to mark after the rightmost-marked number on the row?
         if (valueToMark > rightmostMarkValue) {
             // Does the number have a lock? If so, have the minimum number of marks been placed to mark the lock?
-            if (indexToMark < (NUM_CELLS_PER_ROW - 1) 
-            || ((indexToMark == NUM_CELLS_PER_ROW) && (scorepad.getNumMarks(color) >= MIN_MARKS_FOR_LOCK)))
+            if (indexToMark < (GameConstants::NUM_CELLS_PER_ROW - 1) 
+            || ((indexToMark == GameConstants::NUM_CELLS_PER_ROW) && (scorepad.getNumMarks(color) >= GameConstants::MIN_MARKS_FOR_LOCK)))
             {
-                ctxt.legalMoves[numLegalMoves].row = color;
+                ctxt.legalMoves[numLegalMoves].color = color;
                 ctxt.legalMoves[numLegalMoves].index = indexToMark;
                 ++numLegalMoves;
             }
@@ -118,17 +119,17 @@ size_t generateLegalMoves(const MoveContext& ctxt, const Scorepad& scorepad) {
     return numLegalMoves;
 }
 
-template <ActionType A>
-bool Game::resolveAction(const MoveContext& ctxt, std::function<void()> lockAdded) {
+template <ActionType A, typename F>
+bool Game::resolveAction(const MoveContext& ctxt, F lockAdded) {
     bool activePlayerMadeMove = false;
 
     if constexpr (A == ActionType::First) {
         // Register first action moves
         for (size_t i = 0; i < m_numPlayers; ++i) {
-            const unsigned int numMoves = generateLegalMoves<ActionType::First>(ctxt, *m_state->scorepads[i]);
+            const unsigned int numMoves = generateLegalMoves<ActionType::First>(ctxt, m_state.get()->scorepads[i]);
             std::optional<size_t> moveIndex_opt = std::nullopt;
             if (numMoves > 0) {
-                moveIndex_opt = m_players[i]->makeMove(ctxt.legalMoves.subspan(0, numMoves), *m_state);
+                moveIndex_opt = m_players[i].makeMove(ctxt.legalMoves.subspan(0, numMoves), *m_state);
             }
             if (moveIndex_opt) {
                 ctxt.registeredMoves[i] = ctxt.legalMoves[moveIndex_opt.value()];
@@ -142,23 +143,23 @@ bool Game::resolveAction(const MoveContext& ctxt, std::function<void()> lockAdde
         for (size_t i = 0; i < m_numPlayers; ++i) {
             const std::optional<Move> move_opt = ctxt.registeredMoves[i];
             if (move_opt) {
-                m_state->scorepads[i]->markMove(move_opt.value());
-                if (move_opt.value().index == (NUM_CELLS_PER_ROW - 1)) {
-                    m_state->locks[static_cast<size_t>(move_opt.value().row)] = true;
+                m_state.get()->scorepads[i].markMove(move_opt.value());
+                if (move_opt.value().index == (GameConstants::NUM_CELLS_PER_ROW - 1)) {
+                    m_state->locks[static_cast<size_t>(move_opt.value().color)] = true;
                 }
             }
         }
     }
     else {
-        const unsigned int numMoves = generateLegalMoves<ActionType::Second>(ctxt, *m_state->scorepads[m_state->currPlayer]);
+        const unsigned int numMoves = generateLegalMoves<ActionType::Second>(ctxt, m_state.get()->scorepads[m_state->currPlayer]);
         std::optional<size_t> moveIndex_opt = std::nullopt;
         if (numMoves > 0) {
-            moveIndex_opt = m_players[m_state->currPlayer]->makeMove(ctxt.legalMoves.subspan(0, numMoves), *m_state);
+            moveIndex_opt = m_players[m_state->currPlayer].makeMove(ctxt.legalMoves.subspan(0, numMoves), *m_state);
         }
         if (moveIndex_opt) {
-            m_state->scorepads[m_state->currPlayer]->markMove(ctxt.legalMoves[moveIndex_opt.value()]);
-            if (moveIndex_opt.value() == (NUM_CELLS_PER_ROW - 1)) {
-                m_state->locks[static_cast<size_t>(ctxt.legalMoves[moveIndex_opt.value()].row)] = true;
+            m_state.get()->scorepads[m_state->currPlayer].markMove(ctxt.legalMoves[moveIndex_opt.value()]);
+            if (moveIndex_opt.value() == (GameConstants::NUM_CELLS_PER_ROW - 1)) {
+                m_state->locks[static_cast<size_t>(ctxt.legalMoves[moveIndex_opt.value()].color)] = true;
             }
             activePlayerMadeMove = true;
         }
@@ -175,11 +176,11 @@ bool Game::resolveAction(const MoveContext& ctxt, std::function<void()> lockAdde
 void Game::computeScore(std::vector<int>& scores) {
     for (size_t i = 0; i < m_numPlayers; ++i) {
         int score = 0;
-        for (size_t j = 0; j < NUM_ROWS; ++j) {
-            int numMarks = m_state->scorepads[i]->getNumMarks(static_cast<Color>(j));
+        for (size_t j = 0; j < GameConstants::NUM_ROWS; ++j) {
+            int numMarks = m_state.get()->scorepads[i].getNumMarks(static_cast<Color>(j));
             score += (numMarks * (numMarks + 1)) / 2;
         }
-        score -= m_state->scorepads[i]->getNumPenalties();
+        score -= m_state.get()->scorepads[i].getNumPenalties();
         scores.push_back(score);
     }
     std::reverse(scores.begin(), scores.end());
@@ -196,8 +197,8 @@ std::unique_ptr<GameData> Game::run() {
     // Colored dice may be removed during the game.
     std::vector<unsigned int> rolls = { 0, 0, 0, 0, 0, 0 };
 
-    std::array<Move, MAX_LEGAL_MOVES> legalMoves{};
-    std::array<std::optional<Move>, MAX_PLAYERS> registeredMoves{};
+    std::array<Move, GameConstants::MAX_LEGAL_MOVES> legalMoves{};
+    std::array<std::optional<Move>, GameConstants::MAX_PLAYERS> registeredMoves{};
 
     MoveContext ctxt = {
         std::span<Color>(dice),
@@ -208,13 +209,16 @@ std::unique_ptr<GameData> Game::run() {
 
     auto lockAdded = [&]() {
         // Check each lock and remove the corresponding dice
-        for (size_t i = 0; i < NUM_ROWS; ++i) {
+        for (size_t i = 0; i < GameConstants::NUM_ROWS; ++i) {
             if (m_state->locks.test(i)) {
                 dice.erase(dice.begin() + i);
                 rolls.erase(rolls.begin() + 2 + i);
                 ++(m_state->numLocks);
             }
         }
+
+        // Reset the locks so that the next lock addition does not result in numLocks being incremented again for the current locks
+        m_state->locks.reset();
     
         // Reconstruct spans for dice and rolls
         ctxt.dice = std::span<Color>(ctxt.dice);
@@ -222,21 +226,21 @@ std::unique_ptr<GameData> Game::run() {
     
         // Check number of locks
         if (m_state->numLocks >= 2) {
-            m_state->terminal = true;
+            m_state->isTerminal = true;
         }
     };
 
     auto checkPenalties = [this](bool activePlayerMadeMove) {
         if (!activePlayerMadeMove) {
-            if (m_state->scorepads[m_state->currPlayer]->markPenalty()) {
-                m_state->terminal = true;
+            if (m_state.get()->scorepads[m_state->currPlayer].markPenalty()) {
+                m_state->isTerminal = true;
             }
         }
     };
 
     bool activePlayerMadeMove = false;
     
-    while(!m_state->terminal) {
+    while(!m_state->isTerminal) {
         rollDice(ctxt.rolls);
         activePlayerMadeMove = resolveAction<ActionType::First>(ctxt, lockAdded);
         activePlayerMadeMove &= resolveAction<ActionType::Second>(ctxt, lockAdded);
@@ -250,9 +254,10 @@ std::unique_ptr<GameData> Game::run() {
     computeScore(finalScore);
 
     auto max_it = std::max_element(finalScore.begin(), finalScore.end());
-    int max_index = std::distance(finalScore.begin(), max_it);
+    size_t max_index = static_cast<size_t>(std::distance(finalScore.begin(), max_it));
+    std::vector<size_t> winners = { max_index };    // TODO: need to get all max value indices and add them to the list of winners
 
-    std::unique_ptr<GameData> data = std::make_unique<GameData>(max_index, std::move(finalScore), std::move(m_state));
+    std::unique_ptr<GameData> data = std::make_unique<GameData>(std::move(winners), std::move(finalScore), std::move(m_state));
 
     return data;
 }

@@ -1,12 +1,21 @@
+#include <chrono>
 #include <iostream>
 
 #include "game.hpp"
 
 int main() {
-    for (int i = 0; i < 100000; ++i) {
-        Game g = Game(static_cast<size_t>(4));
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < 10; ++i) {
+        Game g = Game(4);
         std::unique_ptr<GameData> stats = g.run();
+        (void) stats;   // discard for now
     }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
+
+    std::cout << "Completed in " << duration.count() << " seconds\n";
 
     return 0;
 }
