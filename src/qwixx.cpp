@@ -7,6 +7,7 @@ int main() {
     auto start = std::chrono::high_resolution_clock::now();
 
     for (int i = 0; i < 100'000; ++i) {
+        // TOOD: should consider reusing this object rather than repeatedly calling its constructor
         Game game = Game(4);
         std::unique_ptr<GameData> stats = game.run();
         (void) stats;   // discard for now
