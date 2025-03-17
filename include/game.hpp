@@ -5,6 +5,7 @@
 #include <functional>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <memory>
 #include <optional>
 #include <span>
@@ -15,6 +16,7 @@ namespace GameConstants {
     static constexpr size_t MAX_PLAYERS = 5;
     static constexpr size_t NUM_ROWS = 4;
     static constexpr size_t NUM_CELLS_PER_ROW = 11;
+    static constexpr size_t LOCK_INDEX = NUM_CELLS_PER_ROW - 1;
     static constexpr int NUM_DICE = 6;
     static constexpr size_t MAX_LEGAL_MOVES = 8;
     static constexpr int MIN_MARKS_FOR_LOCK = 5;
@@ -31,6 +33,13 @@ enum class Color {
     yellow = 1,
     green = 2,
     blue = 3
+};
+
+static std::map<Color, std::string> color_to_string = {
+    { Color::red, "RED" },
+    { Color::yellow, "YELLOW" },
+    { Color::green, "GREEN" },
+    { Color::blue, "BLUE" }
 };
 
 struct Move {
@@ -55,19 +64,6 @@ public:
         return m_rightmost_mark_indices[static_cast<size_t>(color)];
     }
 
-    int get_value_from_index(Color color, size_t index) const {
-        return m_rows[static_cast<size_t>(color)][index].first;
-    }
-
-    constexpr size_t get_index_from_value(Color color, int value) const {
-        if (color == Color::red || color == Color::yellow) {
-            return value - 2;
-        }
-        else {
-            return 12 - value;
-        }
-    }
-
     int get_num_marks(Color color) const {
         return m_num_marks[static_cast<size_t>(color)];
     }
@@ -75,6 +71,8 @@ public:
     int get_num_penalties() const {
         return m_penalties;
     }
+
+    friend std::ostream& operator<< (std::ostream& stream, const Scorepad& scorepad);
 
 private:
     std::array<std::array<std::pair<int, bool>, GameConstants::NUM_CELLS_PER_ROW>, GameConstants::NUM_ROWS> m_rows;
@@ -118,7 +116,13 @@ private:
     bool resolve_action(const MoveContext& ctxt, F lock_added);
 };
 
+constexpr int index_to_value(Color color, size_t index);
+
+constexpr size_t value_to_index(Color color, int value);
+
 void roll_dice(std::span<int> rolls);
 
 template <ActionType A>
 size_t generate_legal_moves(const MoveContext& ctxt, const Scorepad& scorepad);
+
+std::ostream& operator<< (std::ostream& stream, const MoveContext& ctxt);
