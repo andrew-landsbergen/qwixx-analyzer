@@ -16,32 +16,12 @@ target_compile_options(compiler_flags INTERFACE
     "$<${msvc_cxx}:$<BUILD_INTERFACE:-W3>>"
 )
 
-# Define source files not defining "main" as a static library for linking
-add_library(program_code STATIC src/game.cpp)
-
-target_link_libraries(program_code PUBLIC compiler_flags)
-
-target_include_directories(program_code PUBLIC src)
+# Add subdirectories
+add_subdirectory(src)
+add_subdirectory(tests)
 
 # Add the project executable
-add_executable(QwixxAnalyzer src/qwixx.cpp)
+add_executable(QwixxAnalyzer src/main.cpp)
 
-# Link needed libraries
-target_link_libraries(QwixxAnalyzer PUBLIC program_code compiler_flags)
-
-target_include_directories(QwixxAnalyzer PUBLIC src)
-
-# Find Catch2 for testing
-find_package(Catch2)
-
-# Add the project test executable
-add_executable(Tests tests/test.cpp src/game.cpp)
-
-# Link needed libraries
-target_link_libraries(Tests
-                      PUBLIC program_code
-                      PUBLIC compiler_flags
-                      PRIVATE Catch2::Catch2WithMain
-                      )
-
-target_include_directories(Tests PUBLIC src)
+# Link internal "game" library (in src) and compiler_flags
+target_link_libraries(QwixxAnalyzer PUBLIC game compiler_flags)
