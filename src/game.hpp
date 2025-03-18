@@ -116,9 +116,23 @@ private:
     bool resolve_action(const MoveContext& ctxt, F lock_added);
 };
 
-constexpr int index_to_value(Color color, size_t index);
+constexpr int index_to_value(Color color, size_t index) {
+    if (color == Color::red || color == Color::yellow) {
+        return static_cast<int>(index + 2);
+    }
+    else {
+        return static_cast<int>(12 - index);
+    }
+};
 
-constexpr size_t value_to_index(Color color, int value);
+constexpr size_t value_to_index(Color color, int value) {
+    if (color == Color::red || color == Color::yellow) {
+        return static_cast<size_t>(value) - 2;
+    }
+    else {
+        return 12 - static_cast<size_t>(value);
+    }
+};
 
 void roll_dice(std::span<int> rolls);
 

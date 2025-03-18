@@ -356,24 +356,6 @@ std::unique_ptr<GameData> Game::run() {
     return data;
 }
 
-constexpr int index_to_value(Color color, size_t index) {
-    if (color == Color::red || color == Color::yellow) {
-        return static_cast<int>(index + 2);
-    }
-    else {
-        return static_cast<int>(12 - index);
-    }
-}
-
-constexpr size_t value_to_index(Color color, int value) {
-    if (color == Color::red || color == Color::yellow) {
-        return static_cast<size_t>(value) - 2;
-    }
-    else {
-        return 12 - static_cast<size_t>(value);
-    }
-}
-
 std::ostream& operator<< (std::ostream& stream, const Scorepad& scorepad) {
     for (size_t i = 0; i < GameConstants::NUM_ROWS; ++i) {
         Color color = static_cast<Color>(i);
