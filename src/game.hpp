@@ -21,6 +21,7 @@ namespace GameConstants {
     static constexpr size_t MAX_LEGAL_MOVES = 8;
     static constexpr int MIN_MARKS_FOR_LOCK = 5;
     static constexpr int MAX_PENALTIES = 4;
+    static constexpr int PENALTY_VALUE = 5;
 }
 
 enum class ActionType {

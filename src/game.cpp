@@ -42,7 +42,7 @@ void Scorepad::mark_move(const Move& move) {
 }
 
 inline bool Scorepad::mark_penalty() {
-    return (++m_penalties >= 4);
+    return (++m_penalties >= GameConstants::MAX_PENALTIES);
 }
 
 State::State(size_t numPlayers, size_t startingPlayer) 
@@ -81,7 +81,7 @@ size_t generate_legal_moves(const MoveContext& ctxt, const Scorepad& scorepad) {
                   << "Index to mark: " << index_to_mark << '\n' 
                   << "Rightmost mark index: " << (!rightmost_mark_index.has_value() ? "No mark" : std::to_string(rightmost_mark_index.value())) << '\n';*/
         if (!rightmost_mark_index.has_value() || index_to_mark > rightmost_mark_index.value()) { 
-            // Does the number have a lock? If so, have the minimum number of marks been placed to mark the lock?
+            // Are we marking a lock? If so, have the minimum number of marks been placed to mark the lock?
             if (index_to_mark < (GameConstants::LOCK_INDEX) 
             || ((index_to_mark == GameConstants::LOCK_INDEX) && (scorepad.get_num_marks(color) >= GameConstants::MIN_MARKS_FOR_LOCK)))
             {
@@ -241,7 +241,7 @@ std::vector<int> Game::compute_score() const {
             int num_marks = m_state.get()->scorepads[i].get_num_marks(static_cast<Color>(j));
             score += (num_marks * (num_marks + 1)) / 2;
         }
-        score -= m_state.get()->scorepads[i].get_num_penalties();
+        score -= GameConstants::PENALTY_VALUE * (m_state.get()->scorepads[i].get_num_penalties());
         scores[i] = score;
     }
 
