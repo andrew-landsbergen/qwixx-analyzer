@@ -1,5 +1,5 @@
 # Add the test executable
-add_executable(Tests test.cpp)
+add_executable(Tests game_test.cpp)
 
 # Find Catch2 for testing
 find_package(Catch2)
