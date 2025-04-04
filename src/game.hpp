@@ -29,6 +29,12 @@ enum class ActionType {
     Second
 };
 
+// TODO: move to policy file
+enum class PolicyType {
+    Random,
+    Greedy
+};
+
 enum class Color { 
     red = 0,
     yellow = 1,
@@ -105,7 +111,12 @@ struct State {
 
 class Agent {
 public:
-    std::optional<size_t> make_move(std::span<const Move> moves) const;
+    Agent(size_t position) : m_position(position) {};
+
+    template <PolicyType P>
+    std::optional<size_t> make_move(std::span<const Move> moves, const State& state) const;
+protected:
+    size_t m_position;
 };
 
 struct GameData {
@@ -170,10 +181,16 @@ bool Game::resolve_action(const MoveContext& ctxt, F lock_added) {
 
             std::optional<size_t> move_index_opt = std::nullopt;
             if (num_moves > 0) {
-                move_index_opt = m_players[i].make_move(ctxt.legal_moves.subspan(0, num_moves));
+                // TODO: don't do this this way
+                if (i == 0) {
+                    move_index_opt = m_players[i].make_move<PolicyType::Random>(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
+                }
+                else {
+                    move_index_opt = m_players[i].make_move<PolicyType::Greedy>(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
+                }
             }
 
-            if (move_index_opt) {
+            if (move_index_opt.has_value()) {
                 /*std::cout << "Player " << i << " has selected move " << "{ "
                           << color_to_string[ctxt.legal_moves[move_index_opt.value()].color]
                           << ' '
@@ -186,14 +203,18 @@ bool Game::resolve_action(const MoveContext& ctxt, F lock_added) {
                 }
             }
             else {
-                //std::cout << "Player " << i << " has opted to pass.\n";
+                // SUBTLE BUG: without this, passes (no move) aren't registered, and
+                // when ctxt.registered_moves is read later, the previous registered move
+                // will be repeated!
+                ctxt.registered_moves[i] = std::nullopt;
             }
         }
 
         // Make first action moves
         for (size_t i = 0; i < m_num_players; ++i) {
             const std::optional<Move> move_opt = ctxt.registered_moves[i];
-            if (move_opt) {
+            if (move_opt.has_value()) {
+                //std::cout << "Calling mark_move for player " << i << '\n';
                 m_state.get()->scorepads[i].mark_move(move_opt.value());
                 //std::cout << "Player " << i << "'s scorepad after moving:\n" << m_state.get()->scorepads[i];
                 if (move_opt.value().index == GameConstants::LOCK_INDEX) {
@@ -205,7 +226,7 @@ bool Game::resolve_action(const MoveContext& ctxt, F lock_added) {
         
         //std::cout << "First action resolved.\n";
     }
-    else {
+    else if constexpr (A == ActionType::Second) {
         /*std::cout << "Resolving second action.\n";
 
         std::cout << "Player " << m_state->curr_player << "'s scorepad:\n" << m_state.get()->scorepads[m_state->curr_player];*/
@@ -214,15 +235,22 @@ bool Game::resolve_action(const MoveContext& ctxt, F lock_added) {
 
         std::optional<size_t> move_index_opt = std::nullopt;
         if (num_moves > 0) {
-            move_index_opt = m_players[m_state->curr_player].make_move(ctxt.legal_moves.subspan(0, num_moves));
+            // TODO: don't do this this way
+            if (m_state.get()->curr_player == 0) {
+                move_index_opt = m_players[m_state->curr_player].make_move<PolicyType::Random>(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
+            }
+            else {
+                move_index_opt = m_players[m_state->curr_player].make_move<PolicyType::Greedy>(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
+            }
         }
-        if (move_index_opt) {
+        if (move_index_opt.has_value()) {
             /*std::cout << "Active player" << " has selected move " << "{ "
             << color_to_string[ctxt.legal_moves[move_index_opt.value()].color]
             << ' '
             << index_to_value(ctxt.legal_moves[move_index_opt.value()].color, ctxt.legal_moves[move_index_opt.value()].index)
             << " }\n";*/
 
+            //std::cout << "Calling mark_move for player " << m_state->curr_player << '\n';
             m_state.get()->scorepads[m_state->curr_player].mark_move(ctxt.legal_moves[move_index_opt.value()]);
 
             //std::cout << "Player " << m_state->curr_player << "'s scorepad after moving:\n" << m_state.get()->scorepads[m_state->curr_player];
