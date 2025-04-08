@@ -6,7 +6,7 @@ project(QwixxAnalyzer VERSION 1.0)
 
 # Specify the C++ standard
 add_library(compiler_flags INTERFACE)
-target_compile_features(compiler_flags INTERFACE cxx_std_20)
+target_compile_features(compiler_flags INTERFACE cxx_std_23)
 
 # Add compiler flags only when building this project
 set(gcc_like_cxx "$<COMPILE_LANG_AND_ID:CXX,ARMClang,AppleClang,Clang,GNU,LCC>")
