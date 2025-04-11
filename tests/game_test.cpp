@@ -32,11 +32,8 @@ void ScorepadTester::run_tests() {
     static size_t green = static_cast<size_t>(Color::green);
     
     // Basic initialization checks. We trust that all values are set correctly if these are.
-    REQUIRE( m_rows[red][0].first == 2 );
-    REQUIRE( m_rows[red][0].second == false );
-
-    REQUIRE( m_rows[green][0].first == 12 );
-    REQUIRE( m_rows[green][0].second == false );
+    REQUIRE( m_rows[red][0] == false );
+    REQUIRE( m_rows[green][0] == false );
 
     REQUIRE( m_rightmost_mark_indices[red] == std::nullopt );
     REQUIRE( m_num_marks[red] == 0 );
@@ -47,14 +44,14 @@ void ScorepadTester::run_tests() {
         Color color = Color::red;
         size_t index = 0;
         mark_move( { color, index } );
-        REQUIRE( m_rows[static_cast<size_t>(color)][index].second == true );
+        REQUIRE( m_rows[static_cast<size_t>(color)][index] == true );
     }
 
     SECTION( "Marking a move increments the number of marks by exactly 1 for non-locks" ) {
         Color color = Color::yellow;
         size_t index = 3;
         mark_move( { color, index } );
-        REQUIRE( m_rows[static_cast<size_t>(color)][index].second == true );
+        REQUIRE( m_rows[static_cast<size_t>(color)][index] == true );
         REQUIRE( m_num_marks[static_cast<size_t>(color)] == 1 );
     }
 
@@ -62,7 +59,7 @@ void ScorepadTester::run_tests() {
         Color color = Color::yellow;
         size_t index = GameConstants::LOCK_INDEX;
         mark_move( { color, index } );
-        REQUIRE( m_rows[static_cast<size_t>(color)][index].second == true );
+        REQUIRE( m_rows[static_cast<size_t>(color)][index] == true );
         REQUIRE( m_num_marks[static_cast<size_t>(color)] == 2 );
     }
 
@@ -70,7 +67,7 @@ void ScorepadTester::run_tests() {
         Color color = Color::green;
         size_t index = 8;
         mark_move( { color, index } );
-        REQUIRE( m_rows[static_cast<size_t>(color)][index].second == true );
+        REQUIRE( m_rows[static_cast<size_t>(color)][index] == true );
         REQUIRE( m_rightmost_mark_indices[static_cast<size_t>(color)] == 8 );
     }
 
