@@ -1,4 +1,4 @@
 .vscode
 build/
-obj/
-.dir_aliases
+.proj_env
+data/
