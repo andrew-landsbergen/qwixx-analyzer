@@ -98,19 +98,18 @@ size_t generate_legal_moves(const MoveContext& ctxt, const Scorepad& scorepad) {
     return num_legal_moves;
 }
 
-Game::Game(size_t num_players) {
-    if (num_players < GameConstants::MIN_PLAYERS || num_players > GameConstants::MAX_PLAYERS) {
+Game::Game(std::vector<Agent*> players) : m_num_players(players.size()), m_players(players) {    
+    if (m_num_players < GameConstants::MIN_PLAYERS || m_num_players > GameConstants::MAX_PLAYERS) {
         throw std::runtime_error("Invalid player count.");
     }
 
-    m_num_players = num_players;
-
-    // TODO: put this logic in main and just copy the vector of agents over
-    m_players.push_back(std::make_unique<RandomAgent>(0));
-    m_players.push_back(std::make_unique<GreedyAgent>(1, 2));
+    // Set player positions in the game
+    for (size_t i = 0; i < m_players.size(); ++i) {
+        m_players[i]->set_position(i);
+    }
     
-    std::uniform_int_distribution<size_t> dist(0, num_players - 1);
-    m_state = std::make_unique<State>(num_players, dist(rng()));
+    std::uniform_int_distribution<size_t> dist(0, m_num_players - 1);
+    m_state = std::make_unique<State>(m_num_players, dist(rng()));
 }
 
 std::vector<int> Game::compute_score() const {

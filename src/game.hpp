@@ -112,14 +112,14 @@ struct GameData {
 
 class Game {
 public:
-    Game(size_t num_players);
+    Game(std::vector<Agent*> players);
     std::unique_ptr<GameData> run();
     std::vector<int> compute_score() const;
 
 protected:
     size_t m_num_players;
     std::unique_ptr<State> m_state;
-    std::vector<std::unique_ptr<Agent>> m_players;
+    std::vector<Agent*> m_players;
 
     template <ActionType A, typename F>
     bool resolve_action(const MoveContext& ctxt, F lock_added);
@@ -166,7 +166,7 @@ bool Game::resolve_action(const MoveContext& ctxt, F lock_added) {
 
             std::optional<size_t> move_index_opt = std::nullopt;
             if (num_moves > 0) {
-                move_index_opt = m_players[i].get()->make_move(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
+                move_index_opt = m_players[i]->make_move(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
             }
 
             if (move_index_opt.has_value()) {
@@ -214,7 +214,7 @@ bool Game::resolve_action(const MoveContext& ctxt, F lock_added) {
 
         std::optional<size_t> move_index_opt = std::nullopt;
         if (num_moves > 0) {
-            move_index_opt = m_players[m_state->curr_player].get()->make_move(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
+            move_index_opt = m_players[m_state->curr_player]->make_move(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
         }
         if (move_index_opt.has_value()) {
             /*std::cout << "Active player" << " has selected move " << "{ "

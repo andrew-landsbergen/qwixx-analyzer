@@ -9,22 +9,25 @@ class State;
 
 class Agent {
 public:
-    Agent(size_t position) : m_position(position) {};
+    Agent() : m_position(0) {};
     
     virtual std::optional<size_t> make_move(std::span<const Move> moves, const State& state) const = 0;
+    void set_position(size_t position) {
+        m_position = position;
+    }
 protected:
     size_t m_position;
 };
     
 class RandomAgent : public Agent {
 public:
-    RandomAgent(size_t position) : Agent(position) {};
+    RandomAgent() : Agent() {};
     std::optional<size_t> make_move(std::span<const Move> moves, const State& state) const override;
 };
 
 class GreedyAgent : public Agent {
 public:
-    GreedyAgent(size_t position, int max_skips) : Agent(position), m_max_skips(max_skips) {};
+    GreedyAgent(int max_skips) : Agent(), m_max_skips(max_skips) {};
     std::optional<size_t> make_move(std::span<const Move> moves, const State& state) const override;
 protected:
     int m_max_skips;
