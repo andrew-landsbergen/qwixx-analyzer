@@ -11,6 +11,8 @@
 #include <span>
 #include <vector>
 
+#include "agent.hpp"
+
 namespace GameConstants {
     static constexpr size_t MIN_PLAYERS = 2;
     static constexpr size_t MAX_PLAYERS = 5;
@@ -27,12 +29,6 @@ namespace GameConstants {
 enum class ActionType {
     First,
     Second
-};
-
-// TODO: move to policy file
-enum class PolicyType {
-    Random,
-    Greedy
 };
 
 enum class Color { 
@@ -108,16 +104,6 @@ struct State {
         {};
 };
 
-class Agent {
-public:
-    Agent(size_t position) : m_position(position) {};
-
-    template <PolicyType P>
-    std::optional<size_t> make_move(std::span<const Move> moves, const State& state) const;
-protected:
-    size_t m_position;
-};
-
 struct GameData {
     std::vector<size_t> winners;
     std::vector<int> final_score;
@@ -126,14 +112,14 @@ struct GameData {
 
 class Game {
 public:
-    Game(size_t num_players);
+    Game(std::vector<Agent*> players);
     std::unique_ptr<GameData> run();
     std::vector<int> compute_score() const;
 
 protected:
     size_t m_num_players;
     std::unique_ptr<State> m_state;
-    std::vector<Agent> m_players;
+    std::vector<Agent*> m_players;
 
     template <ActionType A, typename F>
     bool resolve_action(const MoveContext& ctxt, F lock_added);
@@ -169,33 +155,16 @@ bool Game::resolve_action(const MoveContext& ctxt, F lock_added) {
     bool active_player_made_move = false;
 
     if constexpr (A == ActionType::First) {
-        //std::cout << "Resolving first action.\n";
         // Register first action moves
-        for (size_t i = 0; i < m_num_players; ++i) {
-            //std::cout << "Player " << i << " is making a move.\n";
-
-            //std::cout << "Player " << i << "'s scorepad:\n" << m_state.get()->scorepads[i];
-            
+        for (size_t i = 0; i < m_num_players; ++i) {            
             const int num_moves = generate_legal_moves<ActionType::First>(ctxt, m_state.get()->scorepads[i]);
 
             std::optional<size_t> move_index_opt = std::nullopt;
             if (num_moves > 0) {
-                // TODO: don't do this this way
-                if (i == 0) {
-                    move_index_opt = m_players[i].make_move<PolicyType::Random>(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
-                }
-                else {
-                    move_index_opt = m_players[i].make_move<PolicyType::Greedy>(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
-                }
+                move_index_opt = m_players[i]->make_move(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
             }
 
             if (move_index_opt.has_value()) {
-                /*std::cout << "Player " << i << " has selected move " << "{ "
-                          << color_to_string[ctxt.legal_moves[move_index_opt.value()].color]
-                          << ' '
-                          << index_to_value(ctxt.legal_moves[move_index_opt.value()].color, ctxt.legal_moves[move_index_opt.value()].index)
-                          << " }\n";*/
-
                 ctxt.registered_moves[i] = ctxt.legal_moves[move_index_opt.value()];
                 if (i == m_state->curr_player) {
                     active_player_made_move = true;
@@ -213,57 +182,28 @@ bool Game::resolve_action(const MoveContext& ctxt, F lock_added) {
         for (size_t i = 0; i < m_num_players; ++i) {
             const std::optional<Move> move_opt = ctxt.registered_moves[i];
             if (move_opt.has_value()) {
-                //std::cout << "Calling mark_move for player " << i << '\n';
                 m_state.get()->scorepads[i].mark_move(move_opt.value());
-                //std::cout << "Player " << i << "'s scorepad after moving:\n" << m_state.get()->scorepads[i];
                 if (move_opt.value().index == GameConstants::LOCK_INDEX) {
-                    //std::cout << "The " << color_to_string[move_opt.value().color] << " row has been locked!";
                     m_state->locks[static_cast<size_t>(move_opt.value().color)] = true;
                 }
             }
         }
-        
-        //std::cout << "First action resolved.\n";
     }
-    else if constexpr (A == ActionType::Second) {
-        /*std::cout << "Resolving second action.\n";
-
-        std::cout << "Player " << m_state->curr_player << "'s scorepad:\n" << m_state.get()->scorepads[m_state->curr_player];*/
-        
+    else if constexpr (A == ActionType::Second) {        
         const int num_moves = generate_legal_moves<ActionType::Second>(ctxt, m_state.get()->scorepads[m_state->curr_player]);
 
         std::optional<size_t> move_index_opt = std::nullopt;
         if (num_moves > 0) {
-            // TODO: don't do this this way
-            if (m_state.get()->curr_player == 0) {
-                move_index_opt = m_players[m_state->curr_player].make_move<PolicyType::Random>(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
-            }
-            else {
-                move_index_opt = m_players[m_state->curr_player].make_move<PolicyType::Greedy>(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
-            }
+            move_index_opt = m_players[m_state->curr_player]->make_move(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
         }
         if (move_index_opt.has_value()) {
-            /*std::cout << "Active player" << " has selected move " << "{ "
-            << color_to_string[ctxt.legal_moves[move_index_opt.value()].color]
-            << ' '
-            << index_to_value(ctxt.legal_moves[move_index_opt.value()].color, ctxt.legal_moves[move_index_opt.value()].index)
-            << " }\n";*/
-
-            //std::cout << "Calling mark_move for player " << m_state->curr_player << '\n';
             m_state.get()->scorepads[m_state->curr_player].mark_move(ctxt.legal_moves[move_index_opt.value()]);
-
-            //std::cout << "Player " << m_state->curr_player << "'s scorepad after moving:\n" << m_state.get()->scorepads[m_state->curr_player];
             
             if (ctxt.legal_moves[move_index_opt.value()].index == GameConstants::LOCK_INDEX) {
-                //std::cout << "The " << color_to_string[ctxt.legal_moves[move_index_opt.value()].color] << " row has been locked!"; 
                 m_state->locks[static_cast<size_t>(ctxt.legal_moves[move_index_opt.value()].color)] = true;
             }
             active_player_made_move = true;
         }
-        else {
-            //std::cout << "Active player has opted to pass.\n";
-        }
-        //std::cout << "Second action resolved.\n";
     }
 
     // Check locks and remove corresponding dice

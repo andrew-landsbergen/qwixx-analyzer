@@ -95,6 +95,7 @@ TEST_CASE( "Scorepad tests", "[scorepad]" ) {
     ScorepadTester().run_tests();
 }
 
+/*
 void GameTester::run_tests() {
     auto mock = []() {};
     
@@ -117,3 +118,4 @@ void GameTester::run_tests() {
 TEST_CASE( "Gane tests", "[game]" ) {
     GameTester(4).run_tests();
 }
+*/

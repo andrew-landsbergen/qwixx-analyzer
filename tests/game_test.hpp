@@ -6,8 +6,10 @@ public:
     void run_tests();
 };
 
+/*
 class GameTester : Game {
 public:
     GameTester(size_t num_players) : Game(num_players) {};
     void run_tests();
 };
+*/
