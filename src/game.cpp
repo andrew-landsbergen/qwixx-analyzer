@@ -41,51 +41,32 @@ void Scorepad::mark_move(const Move& move) {
 
 // TODO: move to policy file
 // TODO: double check how const works for containers
-template <PolicyType P>
-std::optional<size_t> Agent::make_move(std::span<const Move> moves, const State& state) const {
-    // TODO: instead of doing this, I would rather this function call whatever policy function
-    // the agent is instantiated with
-    if constexpr (P == PolicyType::Random) {
-        /*std::cout << "The legal moves are:\n";
-
-        for (auto move : moves) {
-            Color color = move.color;
-            int value = index_to_value(color, move.index);
-            std::cout << "{ " << color_to_string[color] << ' ' << value << " }, ";
-        }
-
-        std::cout << '\n';*/
-        
-        std::uniform_int_distribution<size_t> dist(0, moves.size());
-        const size_t move_index = dist(rng);
-        return move_index == 0 ? std::nullopt : std::optional<size_t>(move_index - 1);
-    }
-    else if constexpr (P == PolicyType::Greedy) {
-        // TODO: instantiate this value as part of the policy, so we can get n-greedy
-        static constexpr int max_skips = 1;
-        
-        std::optional<size_t> choice = std::nullopt;
-        int fewest_skips_seen = std::numeric_limits<int>::max();
-        for (size_t i = 0; i < moves.size(); ++i) {
-            const Color move_color = moves[i].color;
-            const size_t move_index = moves[i].index;
-            const std::optional<size_t> rightmost_index = state.scorepads[m_position].get_rightmost_mark_index(move_color);
-            int num_skips = static_cast<int>(move_index);    // default if there is no rightmost index
-            if (rightmost_index.has_value()) {
-                // Invariant (assuming rest of code is correct): move_index > rightmost_index,
-                // so skipped >= 0
-                num_skips = static_cast<int>(move_index - rightmost_index.value()) - 1;
-            }
-            if (num_skips <= max_skips && num_skips < fewest_skips_seen) {
-                choice = i;
-            }
-        }
-        return choice;
-    }
-    else {
-        throw std::runtime_error("Unrecognized policy");
-    }
+std::optional<size_t> RandomAgent::make_move(std::span<const Move> moves, const State& state) const {        
+    (void) state;
+    std::uniform_int_distribution<size_t> dist(0, moves.size());
+    const size_t move_index = dist(rng);
+    return move_index == 0 ? std::nullopt : std::optional<size_t>(move_index - 1);
 };
+
+std::optional<size_t> GreedyAgent::make_move(std::span<const Move> moves, const State& state) const {
+    std::optional<size_t> choice = std::nullopt;
+    int fewest_skips_seen = std::numeric_limits<int>::max();
+    for (size_t i = 0; i < moves.size(); ++i) {
+        const Color move_color = moves[i].color;
+        const size_t move_index = moves[i].index;
+        const std::optional<size_t> rightmost_index = state.scorepads[m_position].get_rightmost_mark_index(move_color);
+        int num_skips = static_cast<int>(move_index);    // default if there is no rightmost index
+        if (rightmost_index.has_value()) {
+            // Invariant (assuming rest of code is correct): move_index > rightmost_index,
+            // so skipped >= 0
+            num_skips = static_cast<int>(move_index - rightmost_index.value()) - 1;
+        }
+        if (num_skips <= m_max_skips && num_skips < fewest_skips_seen) {
+            choice = i;
+        }
+    }
+    return choice;
+}
 
 void roll_dice(std::span<int> rolls) {
     static std::uniform_int_distribution<int> dist(1, 6);
@@ -153,9 +134,9 @@ Game::Game(size_t num_players) {
 
     m_num_players = num_players;
 
-    for (size_t i = 0; i < num_players; ++i) {
-        m_players.push_back(Agent(i));   // TODO: construct agents with different policies
-    }
+    // TODO: put this logic in main and just copy the vector of agents over
+    m_players.push_back(std::make_unique<RandomAgent>(0));
+    m_players.push_back(std::make_unique<GreedyAgent>(1, 1));
     
     std::uniform_int_distribution<size_t> dist(0, num_players - 1);
     m_state = std::make_unique<State>(num_players, dist(rng));
@@ -335,7 +316,5 @@ std::ostream& operator<< (std::ostream& os, const MoveContext& ctxt) {
     return os;
 }
 
-template std::optional<size_t> Agent::make_move<PolicyType::Random>(std::span<const Move> moves, const State& state) const;
-template std::optional<size_t> Agent::make_move<PolicyType::Greedy>(std::span<const Move> moves, const State& state) const;
 template size_t generate_legal_moves<ActionType::First>(const MoveContext& ctxt, const Scorepad& scorepad);
 template size_t generate_legal_moves<ActionType::Second>(const MoveContext& ctxt, const Scorepad& scorepad);

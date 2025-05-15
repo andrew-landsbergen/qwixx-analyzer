@@ -112,10 +112,23 @@ class Agent {
 public:
     Agent(size_t position) : m_position(position) {};
 
-    template <PolicyType P>
-    std::optional<size_t> make_move(std::span<const Move> moves, const State& state) const;
+    virtual std::optional<size_t> make_move(std::span<const Move> moves, const State& state) const = 0;
 protected:
     size_t m_position;
+};
+
+class RandomAgent : public Agent {
+public:
+    RandomAgent(size_t position) : Agent(position) {};
+    std::optional<size_t> make_move(std::span<const Move> moves, const State& state) const override;
+};
+
+class GreedyAgent : public Agent {
+public:
+    GreedyAgent(size_t position, int max_skips) : Agent(position), m_max_skips(max_skips) {};
+    std::optional<size_t> make_move(std::span<const Move> moves, const State& state) const override;
+protected:
+    int m_max_skips;
 };
 
 struct GameData {
@@ -133,7 +146,7 @@ public:
 protected:
     size_t m_num_players;
     std::unique_ptr<State> m_state;
-    std::vector<Agent> m_players;
+    std::vector<std::unique_ptr<Agent>> m_players;
 
     template <ActionType A, typename F>
     bool resolve_action(const MoveContext& ctxt, F lock_added);
@@ -180,13 +193,7 @@ bool Game::resolve_action(const MoveContext& ctxt, F lock_added) {
 
             std::optional<size_t> move_index_opt = std::nullopt;
             if (num_moves > 0) {
-                // TODO: don't do this this way
-                if (i == 0) {
-                    move_index_opt = m_players[i].make_move<PolicyType::Random>(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
-                }
-                else {
-                    move_index_opt = m_players[i].make_move<PolicyType::Greedy>(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
-                }
+                move_index_opt = m_players[i].get()->make_move(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
             }
 
             if (move_index_opt.has_value()) {
@@ -234,13 +241,7 @@ bool Game::resolve_action(const MoveContext& ctxt, F lock_added) {
 
         std::optional<size_t> move_index_opt = std::nullopt;
         if (num_moves > 0) {
-            // TODO: don't do this this way
-            if (m_state.get()->curr_player == 0) {
-                move_index_opt = m_players[m_state->curr_player].make_move<PolicyType::Random>(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
-            }
-            else {
-                move_index_opt = m_players[m_state->curr_player].make_move<PolicyType::Greedy>(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
-            }
+            move_index_opt = m_players[m_state->curr_player].get()->make_move(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
         }
         if (move_index_opt.has_value()) {
             /*std::cout << "Active player" << " has selected move " << "{ "
