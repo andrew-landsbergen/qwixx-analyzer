@@ -27,14 +27,10 @@ void Scorepad::mark_move(const Move& move) {
     // TODO: should this validate if the move is legal?
     size_t color = static_cast<size_t>(move.color);
     size_t index = move.index;
-    //std::cout << "Marking " << color_to_string[move.color] << " " << index << '\n';
     m_rows[color][index] = true;
-    //std::cout << "Rightmost mark index was " << (m_rightmost_mark_indices[color].has_value() ? m_rightmost_mark_indices[color].value() : -1) << '\n';
     m_rightmost_mark_indices[color] = index;
-    //std::cout << "Rightmost mark index is now " << m_rightmost_mark_indices[color].value() << '\n';
     m_num_marks[color] += 1;
     if (index == (GameConstants::LOCK_INDEX)) {
-        //std::cout << "Adding second mark for " << color_to_string[move.color] << index << "(lock)\n";
         m_num_marks[color] += 1;
     }
 }
@@ -52,15 +48,11 @@ size_t generate_legal_moves(const MoveContext& ctxt, const Scorepad& scorepad) {
 
     auto add_move_if_legal = [&](const Color color, const std::optional<size_t> rightmost_mark_index, const size_t index_to_mark) {
         // Is the number to mark after the rightmost-marked number on the row?
-        /*std::cout << "Checking if move is legal:\n" << "Color: " << color_to_string[color] << '\n'
-                  << "Index to mark: " << index_to_mark << '\n' 
-                  << "Rightmost mark index: " << (!rightmost_mark_index.has_value() ? "No mark" : std::to_string(rightmost_mark_index.value())) << '\n';*/
         if (!rightmost_mark_index.has_value() || index_to_mark > rightmost_mark_index.value()) { 
             // Are we marking a lock? If so, have the minimum number of marks been placed to mark the lock?
             if (index_to_mark < (GameConstants::LOCK_INDEX) 
             || ((index_to_mark == GameConstants::LOCK_INDEX) && (scorepad.get_num_marks(color) >= GameConstants::MIN_MARKS_FOR_LOCK)))
             {
-                //std::cout << "This move is legal.\n";
                 ctxt.legal_moves[num_legal_moves].color = color;
                 ctxt.legal_moves[num_legal_moves].index = index_to_mark;
                 ++num_legal_moves;
@@ -116,17 +108,12 @@ std::vector<int> Game::compute_score() const {
     std::vector<int> scores(m_num_players, 0);
 
     for (size_t i = 0; i < m_num_players; ++i) {
-        //std::cout << "Computing score for player " << i << '\n';
         int score = 0;
         for (size_t j = 0; j < GameConstants::NUM_ROWS; ++j) {
             int num_marks = m_state.get()->scorepads[i].get_num_marks(static_cast<Color>(j));
-            //std::cout << "Number of marks in row " << j << ": " << num_marks << '\n';
             score += (num_marks * (num_marks + 1)) / 2;
-            //std::cout << "Score after adding row " << j << ": " << score << '\n';
         }
-        //std::cout << "Sum of row scores: " << score << '\n';
         score -= GameConstants::PENALTY_VALUE * (m_state.get()->scorepads[i].get_num_penalties());
-        //std::cout << "Score after deducting penalty points: " << score << '\n';
         scores[i] = score;
     }
 
@@ -134,8 +121,6 @@ std::vector<int> Game::compute_score() const {
 }
 
 std::unique_ptr<GameData> Game::run() {        
-    //std::cout << "Game started.\n";
-
     // Initial colors of the colored dice. Colored dice may be removed during the game.
     std::vector<Color> dice = { Color::red, Color::yellow, Color::green, Color::blue };
 
@@ -175,16 +160,13 @@ std::unique_ptr<GameData> Game::run() {
     
         // Check number of locks
         if (m_state->num_locks >= 2) {
-            //std::cout << "The total number of locks is at least 2. The game is now over.\n";
             m_state->is_terminal = true;
         }
     };
 
     auto check_penalties = [this](bool active_player_made_move) {
         if (!active_player_made_move) {
-            //std::cout << "The active player did not make a move during either action. They must mark a penalty box.\n";
             if (m_state.get()->scorepads[m_state->curr_player].mark_penalty()) {
-                //std::cout << "Four penalties have been marked. The game is now over.\n";
                 m_state->is_terminal = true;
             }
         }
@@ -192,23 +174,8 @@ std::unique_ptr<GameData> Game::run() {
 
     bool active_player_made_move = false;
     
-    while(!m_state->is_terminal) {
-        /*std::cout << "The active player is " << m_state->curr_player << ".\n";
-
-        std::cout << "Rolling dice.\n";*/
-        
+    while(!m_state->is_terminal) {        
         roll_dice(ctxt.rolls);
-
-        /*std::cout << "The dice rolls are:\n";
-    
-        for (size_t i = 0; i < 2; ++i) {
-            std::cout << "WHITE: " << ctxt.rolls[i] << '\n';
-        }
-    
-        for (size_t i = 2; i < ctxt.rolls.size(); ++i) {
-            Color color = ctxt.dice[i - 2];
-            std::cout << color_to_string[color] << ": " << ctxt.rolls[i] << '\n';
-        }*/
 
         active_player_made_move = resolve_action<ActionType::First>(ctxt, lock_added);
 
