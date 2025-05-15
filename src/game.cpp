@@ -9,9 +9,9 @@
 #include <random>
 #include <span>
 
+#include "agent.hpp"
 #include "game.hpp"
-
-std::mt19937_64 rng;
+#include "rng.hpp"
 
 Scorepad::Scorepad() : m_rightmost_mark_indices{}, m_num_marks{}, m_penalties(0) {
     m_rightmost_mark_indices.fill(std::nullopt);
@@ -39,39 +39,10 @@ void Scorepad::mark_move(const Move& move) {
     }
 }
 
-// TODO: move to policy file
-// TODO: double check how const works for containers
-std::optional<size_t> RandomAgent::make_move(std::span<const Move> moves, const State& state) const {        
-    (void) state;
-    std::uniform_int_distribution<size_t> dist(0, moves.size());
-    const size_t move_index = dist(rng);
-    return move_index == 0 ? std::nullopt : std::optional<size_t>(move_index - 1);
-};
-
-std::optional<size_t> GreedyAgent::make_move(std::span<const Move> moves, const State& state) const {
-    std::optional<size_t> choice = std::nullopt;
-    int fewest_skips_seen = std::numeric_limits<int>::max();
-    for (size_t i = 0; i < moves.size(); ++i) {
-        const Color move_color = moves[i].color;
-        const size_t move_index = moves[i].index;
-        const std::optional<size_t> rightmost_index = state.scorepads[m_position].get_rightmost_mark_index(move_color);
-        int num_skips = static_cast<int>(move_index);    // default if there is no rightmost index
-        if (rightmost_index.has_value()) {
-            // Invariant (assuming rest of code is correct): move_index > rightmost_index,
-            // so skipped >= 0
-            num_skips = static_cast<int>(move_index - rightmost_index.value()) - 1;
-        }
-        if (num_skips <= m_max_skips && num_skips < fewest_skips_seen) {
-            choice = i;
-        }
-    }
-    return choice;
-}
-
 void roll_dice(std::span<int> rolls) {
     static std::uniform_int_distribution<int> dist(1, 6);
     for (size_t i = 0; i < rolls.size(); ++i) {
-        rolls[i] = dist(rng);
+        rolls[i] = dist(rng());
     }
 }
 
@@ -136,10 +107,10 @@ Game::Game(size_t num_players) {
 
     // TODO: put this logic in main and just copy the vector of agents over
     m_players.push_back(std::make_unique<RandomAgent>(0));
-    m_players.push_back(std::make_unique<GreedyAgent>(1, 1));
+    m_players.push_back(std::make_unique<GreedyAgent>(1, 2));
     
     std::uniform_int_distribution<size_t> dist(0, num_players - 1);
-    m_state = std::make_unique<State>(num_players, dist(rng));
+    m_state = std::make_unique<State>(num_players, dist(rng()));
 }
 
 std::vector<int> Game::compute_score() const {
@@ -165,9 +136,6 @@ std::vector<int> Game::compute_score() const {
 
 std::unique_ptr<GameData> Game::run() {        
     //std::cout << "Game started.\n";
-    
-    // Seed random number generator
-    rng.seed(std::chrono::system_clock::now().time_since_epoch().count());
 
     // Initial colors of the colored dice. Colored dice may be removed during the game.
     std::vector<Color> dice = { Color::red, Color::yellow, Color::green, Color::blue };
