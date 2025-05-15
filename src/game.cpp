@@ -18,15 +18,7 @@ Scorepad::Scorepad() : m_rightmost_mark_indices{}, m_num_marks{}, m_penalties(0)
     
     for (size_t i = 0; i < m_rows.size(); ++i) {
         for (size_t j = 0; j < m_rows[i].size(); ++j) {
-            // TODO: change to just use conversion function
-            if (static_cast<Color>(i) == Color::red || static_cast<Color>(i) == Color::yellow) {
-                m_rows[i][j].first = j + 2;
-                m_rows[i][j].second = false;
-            }
-            else {
-                m_rows[i][j].first = 12 - j;
-                m_rows[i][j].second = false;
-            }
+            m_rows[i][j] = false;
         }
     }
 }
@@ -36,7 +28,7 @@ void Scorepad::mark_move(const Move& move) {
     size_t color = static_cast<size_t>(move.color);
     size_t index = move.index;
     //std::cout << "Marking " << color_to_string[move.color] << " " << index << '\n';
-    m_rows[color][index].second = true;
+    m_rows[color][index] = true;
     //std::cout << "Rightmost mark index was " << (m_rightmost_mark_indices[color].has_value() ? m_rightmost_mark_indices[color].value() : -1) << '\n';
     m_rightmost_mark_indices[color] = index;
     //std::cout << "Rightmost mark index is now " << m_rightmost_mark_indices[color].value() << '\n';
@@ -309,8 +301,8 @@ std::ostream& operator<< (std::ostream& stream, const Scorepad& scorepad) {
             case Color::blue: color_str += "BLUE      "; break;
         }
         stream << color_str;
-        for (auto pair : scorepad.m_rows[i]) {
-            stream << std::setw(4) << (pair.second ? "X" : std::to_string(pair.first));
+        for (size_t j = 0; j < GameConstants::NUM_CELLS_PER_ROW; ++j) {
+            stream << std::setw(4) << (scorepad.m_rows[i][j] ? "X" : std::to_string(index_to_value(color, j)));
         }
         stream << '\n';
     }

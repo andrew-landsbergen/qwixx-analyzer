@@ -66,7 +66,7 @@ public:
     Scorepad();
     void mark_move(const Move& move);
 
-    inline bool mark_penalty() {
+    bool mark_penalty() {
         return (++m_penalties >= GameConstants::MAX_PENALTIES);
     };
 
@@ -85,8 +85,7 @@ public:
     friend std::ostream& operator<< (std::ostream& stream, const Scorepad& scorepad);
 
 protected:
-    // TODO: can this be changed to const int?
-    std::array<std::array<std::pair<int, bool>, GameConstants::NUM_CELLS_PER_ROW>, GameConstants::NUM_ROWS> m_rows;
+    std::array<std::array<bool, GameConstants::NUM_CELLS_PER_ROW>, GameConstants::NUM_ROWS> m_rows;
     std::array<std::optional<size_t>, GameConstants::NUM_ROWS> m_rightmost_mark_indices;
     std::array<int, GameConstants::NUM_ROWS> m_num_marks;
     int m_penalties;
