@@ -20,7 +20,7 @@ std::optional<size_t> GreedyAgent::make_move(std::span<const Move> moves, const 
         int num_skips = static_cast<int>(move_index);    // default if there is no rightmost index
         if (rightmost_index.has_value()) {
             // Invariant (assuming rest of code is correct): move_index > rightmost_index,
-            // so skipped >= 0
+            // so num_skips >= 0
             num_skips = static_cast<int>(move_index - rightmost_index.value()) - 1;
         }
         if (num_skips <= m_max_skips && num_skips < fewest_skips_seen) {
