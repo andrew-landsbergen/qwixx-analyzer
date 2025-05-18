@@ -22,18 +22,36 @@ protected:
     size_t m_position;
 };
     
-class RandomAgent : public Agent {
+class Random : public Agent {
 public:
-    RandomAgent() : Agent() {};
+    Random() : Agent() {};
 
     std::optional<size_t> make_move(std::span<const Move> moves, const State& state) const override;
 };
 
-class GreedyAgent : public Agent {
+class Greedy : public Agent {
 public:
-    GreedyAgent(int max_skips) : Agent(), m_max_skips(max_skips) {};
+    Greedy(int max_skips) : Agent(), m_max_skips(max_skips) {};
 
     std::optional<size_t> make_move(std::span<const Move> moves, const State& state) const override;
 protected:
     int m_max_skips;
+};
+
+class GreedySkipLowProbability : public Agent {
+public:
+    GreedySkipLowProbability(int max_skips) : Agent(), m_max_skips(max_skips) {};
+
+    std::optional<size_t> make_move(std::span<const Move> moves, const State& state) const override;
+protected:
+    int m_max_skips;
+};
+
+class RushLocks : public Agent {
+public:
+    RushLocks(int two_skip_percent) : Agent(), m_two_skip_percent(two_skip_percent) {};
+
+    std::optional<size_t> make_move(std::span<const Move> moves, const State& state) const override;
+protected:
+    int m_two_skip_percent;
 };

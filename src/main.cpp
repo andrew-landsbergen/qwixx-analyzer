@@ -7,21 +7,13 @@
 #include "game.hpp"
 
 int main() {
-    const std::vector<std::string> agent_names = {
-        "Random",
-        "Greedy1Skip",
-        "Greedy2Skip",
-        "Greedy3Skip",
-        "Greedy4Skip"
-    };
-
-    std::cout << "\nWelcome to the Qwixx analyzer tool. The available agents are\n\n";
-    for (size_t i = 0; i < agent_names.size(); ++i) {
-        std::cout << i << ": " << agent_names[i] << '\n';
-    }
-
-    std::cout << '\n' << "Please input the number of simulations, followed by a sequence of 2 to 5 numbers corresponding to the above numbers for each agent. "
-              << "\nExample: 10000 0 1 for 10000 simulations of Random vs. Greedy1Skip.\n\n";
+    std::cout << "\nWelcome to the Qwixx analyzer tool. The available agents are\n\n"
+              << "0: Random\n"
+              << "1-10: GreedyNSkip (1 <= N <= 10)\n"
+              << "11-20: GreedySkipLowProbabilityNSkip (1 <= N <= 10)\n"
+              << "21: RushLocks\n"
+              << "\nPlease input the number of simulations, followed by a sequence of 2 to 5 numbers corresponding to the above numbers for each agent.\n"
+              << "Example: 10000 0 4 15 for 10000 simulations of Random vs. Greedy4Skip vs. GreedySkipLowProbability5Skip.\n\n";
     
     // TOOD: validate input
     std::string line;
@@ -36,11 +28,18 @@ int main() {
     int num_agents = 0;
     while (num_agents < 5 && iss >> agent_selection) {
         if (agent_selection == 0) {
-            players.push_back(std::tuple(std::make_unique<RandomAgent>(), "Random"));
+            players.push_back(std::tuple(std::make_unique<Random>(), "Random"));
         }
-        else if (agent_selection >= 1 && agent_selection <= 4) {
+        else if (agent_selection >= 1 && agent_selection <= 10) {
             std::string name = std::string("Greedy") + std::to_string(agent_selection) + std::string("Skip");
-            players.push_back(std::tuple(std::make_unique<GreedyAgent>(agent_selection), name));
+            players.push_back(std::tuple(std::make_unique<Greedy>(agent_selection), name));
+        }
+        else if (agent_selection >= 11 && agent_selection <= 20) {
+            std::string name = std::string("GreedySkipLowProbability") + std::to_string((agent_selection - 10)) + std::string("Skip");
+            players.push_back(std::tuple(std::make_unique<GreedySkipLowProbability>(agent_selection), name));
+        }
+        else if (agent_selection == 21) {
+            players.push_back(std::tuple(std::make_unique<RushLocks>(50), "RushLocks"));
         }
         else {
             std::cout << agent_selection << " is not a valid agent number, skipping...\n";
@@ -57,6 +56,7 @@ int main() {
     }
 
     int num_p1_wins = 0;
+    int num_p2_wins = 0;
 
     for (int i = 0; i < num_simulations; ++i) {
         std::cout << "GAME " << (i + 1) << "\n\n";
@@ -73,10 +73,13 @@ int main() {
         if (stats.get()->winners[0] == 0) {
             ++num_p1_wins;
         }
+        else if (stats.get()->winners[0] == 1) {
+            ++num_p2_wins;
+        }
     }
 
     std::cout << std::get<1>(players[0]) << " wins: " << num_p1_wins << '\n'
-              << std::get<1>(players[1]) << " wins: " << (num_simulations - num_p1_wins) << "\n\n";
+              << std::get<1>(players[1]) << " wins: " << num_p2_wins << "\n\n";
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;
