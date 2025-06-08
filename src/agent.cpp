@@ -2,6 +2,42 @@
 #include "game.hpp"
 #include "rng.hpp"
 
+std::optional<size_t> Human::make_move(std::span<const Move> moves, const State& state) const {
+    (void) state;
+    for (size_t i = 0; i < state.scorepads.size(); ++i) {
+        if (i == m_position) {
+            continue;
+        }
+
+        std::cout << "\nPlayer " << i << "\'s scorepad:\n" << state.scorepads[i] << '\n';
+    }
+    
+    std::cout << "Your scorepad:\n" << state.scorepads[m_position] << '\n';
+    std::string move_string = "";
+    for (size_t i = 0; i < moves.size(); ++i) {
+       move_string += (std::to_string(i+1) + ": " + color_to_string[moves[i].color]
+                   + ' ' + std::to_string(index_to_value(moves[i].color, moves[i].index)) + '\n');  
+    }
+    
+
+    if (state.curr_player == m_position) {
+        std::cout << "YOU ARE THE ACTIVE PLAYER. ";
+    }
+    
+    std::cout << "The available moves are:\n" << move_string
+              << "Please type the number of your chosen move, or type 0 to pass.\n";
+    size_t choice = 0;
+    std::cin >> choice;
+    while (std::cin.fail() || choice > moves.size()) {
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::cin >> choice;
+    }
+
+    return choice == 0 ? std::nullopt : std::optional<size_t>(choice - 1);
+}
+
+
 // TODO: double check how const works for containers
 std::optional<size_t> Random::make_move(std::span<const Move> moves, const State& state) const {        
     (void) state;

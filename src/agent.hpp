@@ -21,6 +21,13 @@ public:
 protected:
     size_t m_position;
 };
+
+class Human : public Agent {
+public:
+    Human() : Agent() {};
+
+    std::optional<size_t> make_move(std::span<const Move> moves, const State& state) const override;
+};
     
 class Random : public Agent {
 public:

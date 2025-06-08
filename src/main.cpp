@@ -12,6 +12,7 @@ int main() {
               << "1-10: GreedyNSkip (1 <= N <= 10)\n"
               << "11-20: GreedySkipLowProbabilityNSkip (1 <= N <= 10)\n"
               << "21: RushLocks\n"
+              << "22: Human\n"
               << "\nPlease input the number of simulations, followed by a sequence of 2 to 5 numbers corresponding to the above numbers for each agent.\n"
               << "Example: 10000 0 4 15 for 10000 simulations of Random vs. Greedy4Skip vs. GreedySkipLowProbability5Skip.\n\n";
     
@@ -40,6 +41,9 @@ int main() {
         }
         else if (agent_selection == 21) {
             players.push_back(std::tuple(std::make_unique<RushLocks>(50), "RushLocks"));
+        }
+        else if (agent_selection == 22) {
+            players.push_back(std::tuple(std::make_unique<Human>(), "Human"));
         }
         else {
             std::cout << agent_selection << " is not a valid agent number, skipping...\n";

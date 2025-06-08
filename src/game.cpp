@@ -174,14 +174,25 @@ std::unique_ptr<GameData> Game::run() {
 
     bool active_player_made_move = false;
     
-    while(!m_state->is_terminal) {        
+    while(!m_state->is_terminal) {                
         roll_dice(ctxt.rolls);
+
+        std::cout << "\nStarting new round.\nRolling dice...\n"
+                  << "WHITE: " << ctxt.rolls[0] << ' ' << ctxt.rolls[1] << '\n';
+
+        for (size_t i = 0; i < dice.size(); ++i) {
+            std::cout << color_to_string[dice[i]] << ": " << ctxt.rolls[i + 2] << '\n';
+        }
+
+        std::cout << "Action one in progress. Player " << m_state->curr_player << " is active.\n";
 
         active_player_made_move = resolve_action<ActionType::First>(ctxt, lock_added);
 
         if (m_state->is_terminal) {
             break;
         }
+
+        std::cout << "Action two in progress. Player " << m_state->curr_player << " is active.\n";
 
         active_player_made_move |= resolve_action<ActionType::Second>(ctxt, lock_added);
 
