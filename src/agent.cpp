@@ -2,8 +2,8 @@
 #include "game.hpp"
 #include "rng.hpp"
 
-std::optional<size_t> Human::make_move(std::span<const Move> moves, const State& state) const {
-    (void) state;
+std::optional<size_t> Human::make_move(std::span<const Move> current_action_legal_moves, std::span<const Move> action_two_possible_moves, const State& state) const {
+    (void) state, (void) action_two_possible_moves;
     for (size_t i = 0; i < state.scorepads.size(); ++i) {
         if (i == m_position) {
             continue;
@@ -14,9 +14,9 @@ std::optional<size_t> Human::make_move(std::span<const Move> moves, const State&
     
     std::cout << "Your scorepad:\n" << state.scorepads[m_position] << '\n';
     std::string move_string = "";
-    for (size_t i = 0; i < moves.size(); ++i) {
-       move_string += (std::to_string(i+1) + ": " + color_to_string[moves[i].color]
-                   + ' ' + std::to_string(index_to_value(moves[i].color, moves[i].index)) + '\n');  
+    for (size_t i = 0; i < current_action_legal_moves.size(); ++i) {
+       move_string += (std::to_string(i+1) + ": " + color_to_string[current_action_legal_moves[i].color]
+                   + ' ' + std::to_string(index_to_value(current_action_legal_moves[i].color, current_action_legal_moves[i].index)) + '\n');  
     }
     
 
@@ -28,7 +28,7 @@ std::optional<size_t> Human::make_move(std::span<const Move> moves, const State&
               << "Please type the number of your chosen move, or type 0 to pass.\n";
     size_t choice = 0;
     std::cin >> choice;
-    while (std::cin.fail() || choice > moves.size()) {
+    while (std::cin.fail() || choice > current_action_legal_moves.size()) {
         std::cin.clear();
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         std::cin >> choice;
@@ -39,19 +39,21 @@ std::optional<size_t> Human::make_move(std::span<const Move> moves, const State&
 
 
 // TODO: double check how const works for containers
-std::optional<size_t> Random::make_move(std::span<const Move> moves, const State& state) const {        
-    (void) state;
-    std::uniform_int_distribution<size_t> dist(0, moves.size());
+std::optional<size_t> Random::make_move(std::span<const Move> current_action_legal_moves, std::span<const Move> action_two_possible_moves, const State& state) const {        
+    (void) state, (void) action_two_possible_moves;
+    std::uniform_int_distribution<size_t> dist(0, current_action_legal_moves.size());
     const size_t move_index = dist(rng());
     return move_index == 0 ? std::nullopt : std::optional<size_t>(move_index - 1);
 };
 
-std::optional<size_t> Greedy::make_move(std::span<const Move> moves, const State& state) const {
+std::optional<size_t> Greedy::make_move(std::span<const Move> current_action_legal_moves, std::span<const Move> action_two_possible_moves, const State& state) const {
+    (void) action_two_possible_moves;
+    
     std::optional<size_t> choice = std::nullopt;
     int fewest_skips_seen = std::numeric_limits<int>::max();
-    for (size_t i = 0; i < moves.size(); ++i) {
-        const Color move_color = moves[i].color;
-        const size_t move_index = moves[i].index;
+    for (size_t i = 0; i < current_action_legal_moves.size(); ++i) {
+        const Color move_color = current_action_legal_moves[i].color;
+        const size_t move_index = current_action_legal_moves[i].index;
         const std::optional<size_t> rightmost_index = state.scorepads[m_position].get_rightmost_mark_index(move_color);
 
         int num_skips = static_cast<int>(move_index);    // default if there is no rightmost index
@@ -67,12 +69,14 @@ std::optional<size_t> Greedy::make_move(std::span<const Move> moves, const State
     return choice;
 }
 
-std::optional<size_t> GreedySkipLowProbability::make_move(std::span<const Move> moves, const State& state) const {
+std::optional<size_t> GreedySkipLowProbability::make_move(std::span<const Move> current_action_legal_moves, std::span<const Move> action_two_possible_moves, const State& state) const {
+    (void) action_two_possible_moves;
+    
     std::optional<size_t> choice = std::nullopt;
     int fewest_skips_seen = std::numeric_limits<int>::max();
-    for (size_t i = 0; i < moves.size(); ++i) {
-        const Color move_color = moves[i].color;
-        const size_t move_index = moves[i].index;
+    for (size_t i = 0; i < current_action_legal_moves.size(); ++i) {
+        const Color move_color = current_action_legal_moves[i].color;
+        const size_t move_index = current_action_legal_moves[i].index;
         const std::optional<size_t> rightmost_index = state.scorepads[m_position].get_rightmost_mark_index(move_color);
         
         // Always mark locks if possible
@@ -103,7 +107,9 @@ std::optional<size_t> GreedySkipLowProbability::make_move(std::span<const Move> 
     return choice;
 }
 
-std::optional<size_t> RushLocks::make_move(std::span<const Move> moves, const State& state) const {    
+std::optional<size_t> RushLocks::make_move(std::span<const Move> current_action_legal_moves, std::span<const Move> action_two_possible_moves, const State& state) const {    
+    (void) action_two_possible_moves;
+    
     std::optional<size_t> choice = std::nullopt;
     
     /*for (size_t i = 0; i < moves.size(); ++i) {
@@ -114,9 +120,9 @@ std::optional<size_t> RushLocks::make_move(std::span<const Move> moves, const St
     }*/
 
     int most_marks_seen = std::numeric_limits<int>::min();
-    for (size_t i = 0; i < moves.size(); ++i) {
-        const Color move_color = moves[i].color;
-        const size_t move_index = moves[i].index;
+    for (size_t i = 0; i < current_action_legal_moves.size(); ++i) {
+        const Color move_color = current_action_legal_moves[i].color;
+        const size_t move_index = current_action_legal_moves[i].index;
         const std::optional<size_t> rightmost_index = state.scorepads[m_position].get_rightmost_mark_index(move_color);
         const int num_marks = state.scorepads[m_position].get_num_marks(move_color);
 
@@ -138,9 +144,9 @@ std::optional<size_t> RushLocks::make_move(std::span<const Move> moves, const St
     }
 
     int fewest_skips_seen = std::numeric_limits<int>::max();
-    for (size_t i = 0; i < moves.size(); ++i) {
-        const Color move_color = moves[i].color;
-        const size_t move_index = moves[i].index;
+    for (size_t i = 0; i < current_action_legal_moves.size(); ++i) {
+        const Color move_color = current_action_legal_moves[i].color;
+        const size_t move_index = current_action_legal_moves[i].index;
         const std::optional<size_t> rightmost_index = state.scorepads[m_position].get_rightmost_mark_index(move_color);
 
         int num_skips = static_cast<int>(move_index);    // default if there is no rightmost index

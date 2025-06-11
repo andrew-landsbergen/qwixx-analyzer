@@ -53,8 +53,9 @@ struct Move {
 struct MoveContext {
     std::span<Color> dice;
     std::span<int> rolls;
-    std::span<Move> legal_moves;
-    std::span<std::optional<Move>> registered_moves;
+    std::span<Move> current_action_legal_moves;
+    std::span<Move> action_two_possible_moves;
+    std::span<std::optional<Move>> action_one_registered_moves;
 };
 
 class Scorepad {
@@ -122,7 +123,7 @@ protected:
     std::vector<Agent*> m_players;
 
     template <ActionType A, typename F>
-    bool resolve_action(const MoveContext& ctxt, F lock_added);
+    bool resolve_action(MoveContext& ctxt, F lock_added);
 };
 
 constexpr int index_to_value(Color color, size_t index) {
@@ -146,26 +147,32 @@ constexpr size_t value_to_index(Color color, int value) {
 void roll_dice(std::span<int> rolls);
 
 template <ActionType A>
-size_t generate_legal_moves(const MoveContext& ctxt, const Scorepad& scorepad);
+size_t generate_legal_moves(std::span<Move>& legal_moves, const std::span<Color>& dice, const std::span<int>& rolls, const Scorepad& scorepad);
 
 // This template function needs to be defined in the header file so as to avoid
 // needing to instantiate a specific callable type
 template <ActionType A, typename F>
-bool Game::resolve_action(const MoveContext& ctxt, F lock_added) {
+bool Game::resolve_action(MoveContext& ctxt, F lock_added) {
     bool active_player_made_move = false;
 
     if constexpr (A == ActionType::First) {
+        // Generate the currently possible action two moves.
+        // This allows an agent to make its action one move on the
+        // basis of its possible action one and action two moves.
+        const int num_action_two_moves = generate_legal_moves<ActionType::Second>(ctxt.action_two_possible_moves, ctxt.dice, ctxt.rolls, m_state.get()->scorepads[m_state->curr_player]);
+        
         // Register first action moves
         for (size_t i = 0; i < m_num_players; ++i) {            
-            const int num_moves = generate_legal_moves<ActionType::First>(ctxt, m_state.get()->scorepads[i]);
+            const int num_action_one_moves = generate_legal_moves<ActionType::First>(ctxt.current_action_legal_moves, ctxt.dice, ctxt.rolls, m_state.get()->scorepads[i]);
 
             std::optional<size_t> move_index_opt = std::nullopt;
-            if (num_moves > 0) {
-                move_index_opt = m_players[i]->make_move(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
+            if (num_action_one_moves > 0) {
+                move_index_opt = m_players[i]->make_move(ctxt.current_action_legal_moves.subspan(0, num_action_one_moves), 
+                                                         ctxt.action_two_possible_moves.subspan(0, num_action_two_moves), *m_state.get());
             }
 
             if (move_index_opt.has_value()) {
-                ctxt.registered_moves[i] = ctxt.legal_moves[move_index_opt.value()];
+                ctxt.action_one_registered_moves[i] = ctxt.current_action_legal_moves[move_index_opt.value()];
                 if (i == m_state->curr_player) {
                     active_player_made_move = true;
                 }
@@ -174,13 +181,13 @@ bool Game::resolve_action(const MoveContext& ctxt, F lock_added) {
                 // SUBTLE BUG: without this, passes (no move) aren't registered, and
                 // when ctxt.registered_moves is read later, the previous registered move
                 // will be repeated!
-                ctxt.registered_moves[i] = std::nullopt;
+                ctxt.action_one_registered_moves[i] = std::nullopt;
             }
         }
 
         // Make first action moves
         for (size_t i = 0; i < m_num_players; ++i) {
-            const std::optional<Move> move_opt = ctxt.registered_moves[i];
+            const std::optional<Move> move_opt = ctxt.action_one_registered_moves[i];
             if (move_opt.has_value()) {
                 m_state.get()->scorepads[i].mark_move(move_opt.value());
                 if (move_opt.value().index == GameConstants::LOCK_INDEX) {
@@ -190,17 +197,20 @@ bool Game::resolve_action(const MoveContext& ctxt, F lock_added) {
         }
     }
     else if constexpr (A == ActionType::Second) {        
-        const int num_moves = generate_legal_moves<ActionType::Second>(ctxt, m_state.get()->scorepads[m_state->curr_player]);
+        // We do need to regenerate these moves, since some possible moves from before 
+        // may no longer be possible after action one resolves
+        const int num_moves = generate_legal_moves<ActionType::Second>(ctxt.current_action_legal_moves, ctxt.dice, ctxt.rolls, m_state.get()->scorepads[m_state->curr_player]);
 
         std::optional<size_t> move_index_opt = std::nullopt;
         if (num_moves > 0) {
-            move_index_opt = m_players[m_state->curr_player]->make_move(ctxt.legal_moves.subspan(0, num_moves), *m_state.get());
+            move_index_opt = m_players[m_state->curr_player]->make_move(ctxt.current_action_legal_moves.subspan(0, num_moves),
+                                                                        ctxt.current_action_legal_moves.subspan(0, num_moves), *m_state.get());
         }
         if (move_index_opt.has_value()) {
-            m_state.get()->scorepads[m_state->curr_player].mark_move(ctxt.legal_moves[move_index_opt.value()]);
+            m_state.get()->scorepads[m_state->curr_player].mark_move(ctxt.current_action_legal_moves[move_index_opt.value()]);
             
-            if (ctxt.legal_moves[move_index_opt.value()].index == GameConstants::LOCK_INDEX) {
-                m_state->locks[static_cast<size_t>(ctxt.legal_moves[move_index_opt.value()].color)] = true;
+            if (ctxt.current_action_legal_moves[move_index_opt.value()].index == GameConstants::LOCK_INDEX) {
+                m_state->locks[static_cast<size_t>(ctxt.current_action_legal_moves[move_index_opt.value()].color)] = true;
             }
             active_player_made_move = true;
         }

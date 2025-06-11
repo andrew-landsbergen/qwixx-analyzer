@@ -42,10 +42,11 @@ void roll_dice(std::span<int> rolls) {
     }
 }
 
+// TODO: review const correctness
 template <ActionType A>
-size_t generate_legal_moves(const MoveContext& ctxt, const Scorepad& scorepad) {
+size_t generate_legal_moves(std::span<Move>& legal_moves, const std::span<Color>& dice, const std::span<int>& rolls, const Scorepad& scorepad) {
     size_t num_legal_moves = 0;
-
+    
     auto add_move_if_legal = [&](const Color color, const std::optional<size_t> rightmost_mark_index, const size_t index_to_mark) {
         // Is the number to mark after the rightmost-marked number on the row?
         if (!rightmost_mark_index.has_value() || index_to_mark > rightmost_mark_index.value()) { 
@@ -53,8 +54,8 @@ size_t generate_legal_moves(const MoveContext& ctxt, const Scorepad& scorepad) {
             if (index_to_mark < (GameConstants::LOCK_INDEX) 
             || ((index_to_mark == GameConstants::LOCK_INDEX) && (scorepad.get_num_marks(color) >= GameConstants::MIN_MARKS_FOR_LOCK)))
             {
-                ctxt.legal_moves[num_legal_moves].color = color;
-                ctxt.legal_moves[num_legal_moves].index = index_to_mark;
+                legal_moves[num_legal_moves].color = color;
+                legal_moves[num_legal_moves].index = index_to_mark;
                 ++num_legal_moves;
             }
         }
@@ -64,16 +65,16 @@ size_t generate_legal_moves(const MoveContext& ctxt, const Scorepad& scorepad) {
     int sum_2 = 0;
 
     // Use dice to get available color rows
-    for (size_t i = 2; i < ctxt.rolls.size(); ++i) {
+    for (size_t i = 2; i < rolls.size(); ++i) {
         if constexpr (A == ActionType::First) {
-            sum_1 = ctxt.rolls[0] + ctxt.rolls[1];
+            sum_1 = rolls[0] + rolls[1];
         }
         else {
-            sum_1 = ctxt.rolls[0] + ctxt.rolls[i];
-            sum_2 = ctxt.rolls[1] + ctxt.rolls[i];
+            sum_1 = rolls[0] + rolls[i];
+            sum_2 = rolls[1] + rolls[i];
         }
 
-        const Color color = ctxt.dice[i - 2];
+        const Color color = dice[i - 2];
         const std::optional<size_t> rightmost_mark_index = scorepad.get_rightmost_mark_index(color);
         const size_t index_to_mark_1 = value_to_index(color, sum_1);
         const size_t index_to_mark_2 = value_to_index(color, sum_2);
@@ -128,13 +129,15 @@ std::unique_ptr<GameData> Game::run() {
     // Colored dice may be removed during the game.
     std::vector<int> rolls = { 0, 0, 0, 0, 0, 0 };
 
-    std::array<Move, GameConstants::MAX_LEGAL_MOVES> legal_moves{};
+    std::array<Move, GameConstants::MAX_LEGAL_MOVES> current_action_legal_moves{};
+    std::array<Move, GameConstants::MAX_LEGAL_MOVES> action_two_possible_moves{};
     std::array<std::optional<Move>, GameConstants::MAX_PLAYERS> registered_moves{};
 
     MoveContext ctxt = {
         std::span<Color>(dice),
         std::span<int>(rolls),
-        std::span<Move>(legal_moves),
+        std::span<Move>(current_action_legal_moves),
+        std::span<Move>(action_two_possible_moves),
         std::span<std::optional<Move>>(registered_moves)
     };
 
@@ -250,7 +253,7 @@ std::ostream& operator<< (std::ostream& os, const MoveContext& ctxt) {
 
     os << "The legal moves are:\n";
 
-    for (auto move : ctxt.legal_moves) {
+    for (auto move : ctxt.current_action_legal_moves) {
         Color color = move.color;
         int value = index_to_value(color, move.index);
         os << "{ " << color_to_string[color] << ' ' << value << " }, ";
@@ -261,5 +264,5 @@ std::ostream& operator<< (std::ostream& os, const MoveContext& ctxt) {
     return os;
 }
 
-template size_t generate_legal_moves<ActionType::First>(const MoveContext& ctxt, const Scorepad& scorepad);
-template size_t generate_legal_moves<ActionType::Second>(const MoveContext& ctxt, const Scorepad& scorepad);
+template size_t generate_legal_moves<ActionType::First>(std::span<Move>& legal_moves, const std::span<Color>& dice, const std::span<int>& rolls, const Scorepad& scorepad);
+template size_t generate_legal_moves<ActionType::Second>(std::span<Move>& legal_moves, const std::span<Color>& dice, const std::span<int>& rolls, const Scorepad& scorepad);
