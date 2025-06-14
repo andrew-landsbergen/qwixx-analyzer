@@ -73,9 +73,8 @@ std::optional<size_t> Greedy::make_move(bool first_action, std::span<const Move>
 }
 
 std::optional<size_t> GreedyImproved::make_move(bool first_action, std::span<const Move> current_action_legal_moves, std::span<const Move> action_two_possible_moves, const State& state) {
-    static bool made_first_action_move = false;
     if (first_action) {
-        made_first_action_move = false;
+        m_made_first_action_move = false;
     }
 
     auto get_choice = [&](int max_skips, std::span<const Move> moves) {
@@ -115,7 +114,7 @@ std::optional<size_t> GreedyImproved::make_move(bool first_action, std::span<con
         }
 
         if (action_one_choice.has_value()) {
-            made_first_action_move = true;
+            m_made_first_action_move = true;
         }
 
         return action_one_choice;
@@ -125,7 +124,7 @@ std::optional<size_t> GreedyImproved::make_move(bool first_action, std::span<con
         
         std::optional<size_t> action_two_choice = std::nullopt;
 
-        if (made_first_action_move) {
+        if (m_made_first_action_move) {
             action_two_choice = get_choice(m_standard_max_skips, current_action_legal_moves);
         }
         else {
@@ -232,6 +231,12 @@ std::optional<size_t> Computational::make_move(bool first_action, std::span<cons
         double value;
     };
 
+    auto lock_possible = [&](const Move move) {
+        const int num_marks = state.scorepads[m_position].get_num_marks(move.color);
+        const int spaces_remaining = static_cast<int>((GameConstants::LOCK_INDEX - 1) - move.index);
+        return (num_marks + spaces_remaining + 1 >= GameConstants::MIN_MARKS_FOR_LOCK) ? true : false;
+    };
+    
     auto get_value = [&](const Move move) {
         const Color move_color = move.color;
         const size_t move_index = move.index;
@@ -262,8 +267,9 @@ std::optional<size_t> Computational::make_move(bool first_action, std::span<cons
         }
 
         const double base_value = static_cast<double>(num_marks + 1);
+        const double future_value_bonus = static_cast<double>((GameConstants::LOCK_INDEX - 1) - move_index) * 0.5 + (lock_possible(move) ? 0.5 : 0.0);
         const double mark_frequency = static_cast<double>(m_basic_values[move_index].roll_frequency);
-        const double score = base_value - (std::pow(m_alpha, mark_frequency) * skipping_penalty);
+        const double score = base_value + future_value_bonus * m_epsilon - (std::pow(m_alpha, mark_frequency) * skipping_penalty);
 
         //std::cout << color_to_string[move_color] + ' ' + std::to_string(index_to_value(move_color, move_index)) + " score: " + std::to_string(score) + '\n';
 

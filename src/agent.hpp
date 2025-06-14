@@ -53,6 +53,7 @@ public:
 
     std::optional<size_t> make_move(bool first_action, std::span<const Move> current_action_legal_moves, std::span<const Move> action_two_possible_moves, const State& state) override;
 protected:
+    bool m_made_first_action_move = false;    
     int m_standard_max_skips;
     int m_standard_max_penalty_avoidance_skips = 1;
 };
@@ -82,5 +83,6 @@ protected:
     double m_mu = 0.5;
     double m_delta = 0.84;
     double m_sigma = 0.95;
+    double m_epsilon = 0.70;
     std::array<MoveData, GameConstants::NUM_CELLS_PER_ROW> m_basic_values;
 };

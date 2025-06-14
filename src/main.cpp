@@ -71,17 +71,17 @@ int main() {
     int p2_total_score = 0;
 
     for (int i = 0; i < num_simulations; ++i) {
-        //std::cout << "GAME " << (i + 1) << "\n\n";
+        std::cout << "GAME " << (i + 1) << "\n\n";
 
         // TOOD: should consider reusing this object rather than repeatedly calling its constructor
         Game game = Game(player_ptrs, human_active);
         std::unique_ptr<GameData> stats = game.run();
 
         // TODO: make this loop over all players, track win counts for each player, and track ties
-        /*std::cout << "Winner: " << (std::get<1>(players[stats.get()->winners[0]])) << '\n'
+        std::cout << "Winner: " << (std::get<1>(players[stats.get()->winners[0]])) << '\n'
                   << std::get<1>(players[0]) << " score: " << stats.get()->final_score[0] << '\n'
                   << std::get<1>(players[1]) << " score: " << stats.get()->final_score[1] << "\n\n";
-        */
+
         if (stats.get()->winners[0] == 0) {
             ++num_p1_wins;
         }
