@@ -91,7 +91,7 @@ size_t generate_legal_moves(std::span<Move>& legal_moves, const std::span<Color>
     return num_legal_moves;
 }
 
-Game::Game(std::vector<Agent*> players) : m_num_players(players.size()), m_players(players) {    
+Game::Game(std::vector<Agent*> players, bool human_active) : m_num_players(players.size()), m_players(players), m_human_active(human_active) {    
     if (m_num_players < GameConstants::MIN_PLAYERS || m_num_players > GameConstants::MAX_PLAYERS) {
         throw std::runtime_error("Invalid player count.");
     }
@@ -180,14 +180,16 @@ std::unique_ptr<GameData> Game::run() {
     while(!m_state->is_terminal) {                
         roll_dice(ctxt.rolls);
 
-        std::cout << "\nStarting new round.\nRolling dice...\n"
-                  << "WHITE: " << ctxt.rolls[0] << ' ' << ctxt.rolls[1] << '\n';
+        if (m_human_active) {
+            std::cout << "\nStarting new round.\nRolling dice...\n"
+                    << "WHITE: " << ctxt.rolls[0] << ' ' << ctxt.rolls[1] << '\n';
 
-        for (size_t i = 0; i < dice.size(); ++i) {
-            std::cout << color_to_string[dice[i]] << ": " << ctxt.rolls[i + 2] << '\n';
+            for (size_t i = 0; i < dice.size(); ++i) {
+                std::cout << color_to_string[dice[i]] << ": " << ctxt.rolls[i + 2] << '\n';
+            }
+
+            std::cout << "Action one in progress. Player " << m_state->curr_player << " is active.\n";
         }
-
-        std::cout << "Action one in progress. Player " << m_state->curr_player << " is active.\n";
 
         active_player_made_move = resolve_action<ActionType::First>(ctxt, lock_added);
 
@@ -195,7 +197,9 @@ std::unique_ptr<GameData> Game::run() {
             break;
         }
 
-        std::cout << "Action two in progress. Player " << m_state->curr_player << " is active.\n";
+        if (m_human_active) {
+            std::cout << "Action two in progress. Player " << m_state->curr_player << " is active.\n";
+        }
 
         active_player_made_move |= resolve_action<ActionType::Second>(ctxt, lock_added);
 

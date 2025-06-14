@@ -12,19 +12,7 @@
 #include <vector>
 
 #include "agent.hpp"
-
-namespace GameConstants {
-    static constexpr size_t MIN_PLAYERS = 2;
-    static constexpr size_t MAX_PLAYERS = 5;
-    static constexpr size_t NUM_ROWS = 4;
-    static constexpr size_t NUM_CELLS_PER_ROW = 11;
-    static constexpr size_t LOCK_INDEX = NUM_CELLS_PER_ROW - 1;
-    static constexpr int NUM_DICE = 6;
-    static constexpr size_t MAX_LEGAL_MOVES = 8;
-    static constexpr int MIN_MARKS_FOR_LOCK = 5;
-    static constexpr int MAX_PENALTIES = 4;
-    static constexpr int PENALTY_VALUE = 5;
-}
+#include "globals.hpp"
 
 enum class ActionType {
     First,
@@ -113,7 +101,7 @@ struct GameData {
 
 class Game {
 public:
-    Game(std::vector<Agent*> players);
+    Game(std::vector<Agent*> players, bool human_active);
     std::unique_ptr<GameData> run();
     std::vector<int> compute_score() const;
 
@@ -121,6 +109,7 @@ protected:
     size_t m_num_players;
     std::unique_ptr<State> m_state;
     std::vector<Agent*> m_players;
+    bool m_human_active;
 
     template <ActionType A, typename F>
     bool resolve_action(MoveContext& ctxt, F lock_added);
@@ -167,7 +156,7 @@ bool Game::resolve_action(MoveContext& ctxt, F lock_added) {
 
             std::optional<size_t> move_index_opt = std::nullopt;
             if (num_action_one_moves > 0) {
-                move_index_opt = m_players[i]->make_move(ctxt.current_action_legal_moves.subspan(0, num_action_one_moves), 
+                move_index_opt = m_players[i]->make_move(true, ctxt.current_action_legal_moves.subspan(0, num_action_one_moves), 
                                                          ctxt.action_two_possible_moves.subspan(0, num_action_two_moves), *m_state.get());
             }
 
@@ -203,7 +192,7 @@ bool Game::resolve_action(MoveContext& ctxt, F lock_added) {
 
         std::optional<size_t> move_index_opt = std::nullopt;
         if (num_moves > 0) {
-            move_index_opt = m_players[m_state->curr_player]->make_move(ctxt.current_action_legal_moves.subspan(0, num_moves),
+            move_index_opt = m_players[m_state->curr_player]->make_move(false, ctxt.current_action_legal_moves.subspan(0, num_moves),
                                                                         ctxt.current_action_legal_moves.subspan(0, num_moves), *m_state.get());
         }
         if (move_index_opt.has_value()) {
