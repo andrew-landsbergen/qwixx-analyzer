@@ -16,6 +16,7 @@ public:
     virtual ~Agent() = default;
     
     virtual std::optional<size_t> make_move(bool first_action, std::span<const Move> current_action_legal_moves, std::span<const Move> action_two_possible_moves, const State& state) = 0;
+    virtual void mutate(double new_average_score, bool final_mutation) { (void) new_average_score, (void) final_mutation; };
 
     void set_position(size_t position) {
         m_position = position;
@@ -60,16 +61,26 @@ protected:
 
 class RushLocks : public Agent {
 public:
-    RushLocks(int two_skip_percent) : Agent(), m_two_skip_percent(two_skip_percent) {};
+    RushLocks() : Agent() {};
 
     std::optional<size_t> make_move(bool first_action, std::span<const Move> current_action_legal_moves, std::span<const Move> action_two_possible_moves, const State& state) override;
 protected:
-    int m_two_skip_percent;
+    bool m_made_first_action_move = false;
+    Color m_top_row_fast = Color::red;
+    Color m_bottom_row_fast = Color::green;
 };
 
 class Computational : public Agent {
 public:
     Computational();
+
+    enum class Param {
+        alpha,
+        mu,
+        delta,
+        sigma,
+        epsilon
+    };
 
     struct MoveData {
         int base_penalty;
@@ -77,12 +88,15 @@ public:
     };
 
     std::optional<size_t> make_move(bool first_action, std::span<const Move> current_action_legal_moves, std::span<const Move> action_two_possible_moves, const State& state) override;
+    void mutate(double new_average_score, bool final_mutation) override;
 protected:
     bool m_made_first_action_move = false;
-    double m_alpha = 0.95;
-    double m_mu = 0.5;
-    double m_delta = 0.84;
-    double m_sigma = 0.95;
-    double m_epsilon = 0.70;
+    double m_alpha = 0.949905;
+    double m_mu = 0.49005;
+    double m_delta = 0.823284;
+    double m_sigma = 0.921692;
+    double m_epsilon = 0.71407;
+    double m_average_score = 79.78;
     std::array<MoveData, GameConstants::NUM_CELLS_PER_ROW> m_basic_values;
+    std::optional<std::tuple<Param, double>> m_last_mutation = std::nullopt;
 };

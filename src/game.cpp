@@ -158,8 +158,8 @@ std::unique_ptr<GameData> Game::run() {
         m_state->locks.reset();
     
         // Reconstruct spans for dice and rolls
-        ctxt.dice = std::span<Color>(ctxt.dice);
-        ctxt.rolls = std::span<int>(ctxt.rolls);
+        ctxt.dice = std::span<Color>(dice);
+        ctxt.rolls = std::span<int>(rolls);
     
         // Check number of locks
         if (m_state->num_locks >= 2) {

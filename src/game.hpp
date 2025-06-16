@@ -19,13 +19,6 @@ enum class ActionType {
     Second
 };
 
-enum class Color { 
-    red = 0,
-    yellow = 1,
-    green = 2,
-    blue = 3
-};
-
 static std::map<Color, std::string> color_to_string = {
     { Color::red, "RED" },
     { Color::yellow, "YELLOW" },

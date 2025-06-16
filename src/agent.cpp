@@ -137,71 +137,113 @@ std::optional<size_t> GreedyImproved::make_move(bool first_action, std::span<con
 }
 
 std::optional<size_t> RushLocks::make_move(bool first_action, std::span<const Move> current_action_legal_moves, std::span<const Move> action_two_possible_moves, const State& state) {    
-    (void) first_action, (void) action_two_possible_moves;
-    
-    std::optional<size_t> choice = std::nullopt;
-    
-    for (size_t i = 0; i < current_action_legal_moves.size(); ++i) {
-        // Always mark lock if possible
-        if (current_action_legal_moves[i].index == GameConstants::LOCK_INDEX) {
-            return i;
-        }
+    static std::array<int, GameConstants::NUM_CELLS_PER_ROW> roll_frequencies = {1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1};
+
+    if (first_action) {
+        m_made_first_action_move = false;
     }
 
-    int most_marks_seen = std::numeric_limits<int>::min();
-    for (size_t i = 0; i < current_action_legal_moves.size(); ++i) {
-        const Color move_color = current_action_legal_moves[i].color;
-        const size_t move_index = current_action_legal_moves[i].index;
-        const std::optional<size_t> rightmost_index = state.scorepads[m_position].get_rightmost_mark_index(move_color);
-        const int num_marks = state.scorepads[m_position].get_num_marks(move_color);
+    const int red_marks = state.scorepads[m_position].get_num_marks(Color::red);
+    const int yellow_marks = state.scorepads[m_position].get_num_marks(Color::yellow);
+    const int green_marks = state.scorepads[m_position].get_num_marks(Color::green);
+    const int blue_marks = state.scorepads[m_position].get_num_marks(Color::blue);
 
-        int num_skips = static_cast<int>(move_index);    // default if there is no rightmost index
-        if (rightmost_index.has_value()) {
-            // Invariant: move_index > rightmost_index, so num_skips >= 0
-            num_skips = static_cast<int>(move_index - rightmost_index.value()) - 1;
+    m_top_row_fast = (red_marks >= yellow_marks) ? Color::red : Color::yellow;
+    m_bottom_row_fast = (green_marks >= blue_marks) ? Color::green : Color::blue;
+
+    auto get_choice = [&](int penalty_avoidance_skips, std::span<const Move> moves) {
+        std::array<std::tuple<int, int, bool, std::optional<size_t>>, GameConstants::NUM_ROWS> candidates;
+        candidates.fill(std::tuple(std::numeric_limits<int>::max(), 0, false, std::nullopt));
+
+        for (size_t i = 0; i < moves.size(); ++i) {
+            const Color move_color = moves[i].color;
+            const size_t move_index = moves[i].index;
+            const int num_marks = state.scorepads[m_position].get_num_marks(move_color);
+
+            const std::optional<size_t> rightmost_index = state.scorepads[m_position].get_rightmost_mark_index(move_color);
+            size_t skipped_spaces_start = rightmost_index.has_value() ? rightmost_index.value() + 1 : 0;
+            int num_skips = 0;
+            for (size_t j = skipped_spaces_start; j < move_index; ++j) {
+                num_skips += roll_frequencies[j];
+            }
+
+            bool num_skips_ok = false;
+
+            if (moves[i].index == GameConstants::LOCK_INDEX || (num_marks + 1) >= GameConstants::MIN_MARKS_FOR_LOCK) {
+                num_skips_ok = true;
+            }
+            else {
+                if (move_color == m_top_row_fast || move_color == m_bottom_row_fast) {
+                    int num_future_skips = 0;
+                    for (size_t j = moves[i].index + 1; j < GameConstants::LOCK_INDEX; ++j) {
+                        num_future_skips += roll_frequencies[j];
+                    }
+                    if (num_future_skips / static_cast<int>(GameConstants::MIN_MARKS_FOR_LOCK - (num_marks + 1)) >= 5) {
+                        num_skips_ok = true;
+                    }
+                    else {
+                        num_skips_ok = false;
+                    }
+                }
+                else {
+                    num_skips_ok = (num_skips <= 4 + penalty_avoidance_skips);
+                }
+            }
+
+            if (num_skips_ok && num_skips < std::get<0>(candidates[static_cast<size_t>(move_color)])) {
+                candidates[static_cast<size_t>(move_color)] = std::tuple(num_skips, num_marks, move_index == GameConstants::LOCK_INDEX, i);
+            }
         }
 
-        // If a 1-skip or 2-skip is available on a row with at least 3 marks placed, take it
-        if (num_skips <= 2 && num_marks >= most_marks_seen) {
-            choice = i;
-            most_marks_seen = num_marks;
+        std::sort(candidates.begin(), 
+                  candidates.end(),
+                  [](const std::tuple<int, int, bool, std::optional<size_t>> &a, const std::tuple<int, int, bool, std::optional<size_t>> &b) { 
+                        // Important: avoid overflow during the main comparison
+                        if (!std::get<3>(a).has_value()) {
+                            return false;
+                        }
+                        if (!std::get<3>(b).has_value()) {
+                            return true;
+                        }
+                        if (std::get<2>(a) != std::get<2>(b)) {
+                            return std::get<2>(a);
+                        }
+                        else {
+                            return (3 * (std::get<1>(a) - std::get<1>(b)) - (std::get<0>(a) - std::get<0>(b)) >= 0);
+                        }
+                    }
+                 );
+
+        return std::get<3>(candidates[0]);
+    };
+
+    if (first_action) {
+        std::optional<size_t> action_one_choice = std::nullopt;
+        std::optional<size_t> tentative_action_two_choice = std::nullopt;
+        
+        action_one_choice = get_choice(0, current_action_legal_moves);
+        if (!action_one_choice.has_value() && state.curr_player == m_position) {
+            tentative_action_two_choice = get_choice(3, action_two_possible_moves);
+            if (!tentative_action_two_choice.has_value()) {
+                action_one_choice = get_choice(3, current_action_legal_moves);
+            }
         }
+
+        if (action_one_choice.has_value()) {
+            m_made_first_action_move = true;
+        }
+
+        return action_one_choice;
     }
+    else {
+        std::optional<size_t> action_two_choice = std::nullopt;
+        action_two_choice = get_choice(0, current_action_legal_moves);
+        if (!action_two_choice.has_value() && !m_made_first_action_move) {
+            action_two_choice = get_choice(3, current_action_legal_moves);
+        }
 
-    if (choice.has_value()) {
-        return choice;
+        return action_two_choice;
     }
-
-    int fewest_skips_seen = std::numeric_limits<int>::max();
-    for (size_t i = 0; i < current_action_legal_moves.size(); ++i) {
-        const Color move_color = current_action_legal_moves[i].color;
-        const size_t move_index = current_action_legal_moves[i].index;
-        const std::optional<size_t> rightmost_index = state.scorepads[m_position].get_rightmost_mark_index(move_color);
-
-        int num_skips = static_cast<int>(move_index);    // default if there is no rightmost index
-        if (rightmost_index.has_value()) {
-            // Invariant: move_index > rightmost_index, so num_skips >= 0
-            num_skips = static_cast<int>(move_index - rightmost_index.value()) - 1;
-        }
-
-        // If a 1- or 2-skip is available, take it
-        if (num_skips <= 2 && num_skips < fewest_skips_seen) {
-            choice = i;
-            fewest_skips_seen = num_skips;
-        }
-    }
-
-    /*if (choice.has_value()) {
-        std::uniform_int_distribution<size_t> dist(1, 100);
-        const int roll = dist(rng());
-        if (m_two_skip_percent >= roll) {
-            return choice;
-        }
-        else {
-            return std::nullopt;
-        }
-    }*/
-   return choice;
 }
 
 Computational::Computational() : Agent(), m_basic_values{} {
@@ -246,23 +288,6 @@ std::optional<size_t> Computational::make_move(bool first_action, std::span<cons
         double skipping_penalty = 0;
         size_t skipped_spaces_start = rightmost_index.has_value() ? rightmost_index.value() + 1 : 0;
         for (size_t i = skipped_spaces_start; i < move_index; ++i) {
-            /*int num_same_space_remaining = 0;
-            for (size_t j = 0; j < GameConstants::NUM_ROWS; ++j) {
-                const Color row_color = static_cast<Color>(j);
-                const std::optional<size_t> row_rightmost_index = state.scorepads[m_position].get_rightmost_mark_index(row_color);
-                if (!row_rightmost_index.has_value()) {
-                    ++num_same_space_remaining;
-                    continue;
-                }
-                else {
-                    if (row_rightmost_index.value() < i) {
-                        ++num_same_space_remaining;
-                    }
-                }
-            }
-
-            assert(num_same_space_remaining >= 1);*/
-
             skipping_penalty += (m_basic_values[i].base_penalty * m_mu * std::pow(m_delta * m_sigma, m_basic_values[i].roll_frequency)); /// static_cast<double>(num_same_space_remaining);
         }
 
@@ -346,4 +371,77 @@ std::optional<size_t> Computational::make_move(bool first_action, std::span<cons
 
         return action_two_choice;
     }
+}
+
+void Computational::mutate(double new_average_score, bool final_mutation) {
+    if (m_last_mutation.has_value()) {
+        if (new_average_score > m_average_score) {
+            m_average_score = new_average_score;
+        }
+        else {
+            double old_value = std::get<1>(m_last_mutation.value());
+            switch (std::get<0>(m_last_mutation.value())) {
+                case Param::alpha:
+                    m_alpha = old_value;
+                    break;
+                case Param::mu:
+                    m_mu = old_value;
+                    break;
+                case Param::delta:
+                    m_delta = old_value;
+                    break;
+                case Param::sigma:
+                    m_sigma = old_value;
+                    break;
+                case Param::epsilon:
+                    m_epsilon = old_value;
+                    break;
+            }
+        }
+    }
+
+    std::uniform_int_distribution<int> param_dist(0, 4);
+    std::uniform_int_distribution<int> direction_dist(0, 1);
+    Param p = Param::alpha;
+
+    const double mutation_factor = (1.0 + (direction_dist(rng()) == 0 ? 0.02 : -0.02));
+
+    switch (param_dist(rng())) {
+        case 0:
+            p = Param::alpha;
+            m_last_mutation = std::tuple(p, m_alpha);
+            m_alpha = std::min(1.0, m_alpha * mutation_factor);
+            break;
+        case 1:
+            p = Param::mu;
+            m_last_mutation = std::tuple(p, m_mu);
+            m_mu = std::min(1.0, m_mu * mutation_factor);
+            break;
+        case 2:
+            p = Param::delta;
+            m_last_mutation = std::tuple(p, m_delta);
+            m_delta = std::min(1.0, m_delta * mutation_factor);
+            break;
+        case 3:
+            p = Param::sigma;
+            m_last_mutation = std::tuple(p, m_sigma);
+            m_sigma = std::min(1.0, m_sigma * mutation_factor);
+            break;
+        case 4:
+            p = Param::epsilon;
+            m_last_mutation = std::tuple(p, m_epsilon);
+            m_epsilon = std::min(1.0, m_epsilon * mutation_factor);
+            break;
+    }
+
+    if (final_mutation) {
+        std::cout << "New mutation values:\n" 
+                << "alpha = " << m_alpha << '\n'
+                << "mu = " << m_mu << '\n'
+                << "delta = " << m_delta << '\n'
+                << "sigma = " << m_sigma << '\n'
+                << "epsilon = " << m_epsilon << '\n'
+                << "Average score = " << m_average_score << "\n\n";
+    }
+
 }

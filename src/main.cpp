@@ -42,7 +42,7 @@ int main() {
             players.push_back(std::tuple(std::make_unique<GreedyImproved>(agent_selection - 10), name));
         }
         else if (agent_selection == 21) {
-            players.push_back(std::tuple(std::make_unique<RushLocks>(50), "RushLocks"));
+            players.push_back(std::tuple(std::make_unique<RushLocks>(), "RushLocks"));
         }
         else if (agent_selection == 22) {
             players.push_back(std::tuple(std::make_unique<Computational>(), "Computational"));
@@ -70,7 +70,19 @@ int main() {
     int p1_total_score = 0;
     int p2_total_score = 0;
 
+    int p1_mutation_score = 0;
+    int p2_mutation_score = 0;
+    //int games_per_mutation = 500;
+    
     for (int i = 0; i < num_simulations; ++i) {
+        /*if (i % games_per_mutation == 0) {
+            bool final_mutation = (i + games_per_mutation >= num_simulations) ? true : false;
+            player_ptrs[0]->mutate(static_cast<double>(p1_mutation_score) / static_cast<double>(games_per_mutation), final_mutation);
+            player_ptrs[1]->mutate(static_cast<double>(p2_mutation_score) / static_cast<double>(games_per_mutation), final_mutation);
+            p1_mutation_score = 0;
+            p2_mutation_score = 0;
+        }*/
+        
         std::cout << "GAME " << (i + 1) << "\n\n";
 
         // TOOD: should consider reusing this object rather than repeatedly calling its constructor
@@ -91,6 +103,9 @@ int main() {
 
         p1_total_score += stats.get()->final_score[0];
         p2_total_score += stats.get()->final_score[1];
+
+        p1_mutation_score += stats.get()->final_score[0];
+        p2_mutation_score += stats.get()->final_score[1];
     }
 
     std::cout << std::get<1>(players[0]) << " wins: " << num_p1_wins << '\n'

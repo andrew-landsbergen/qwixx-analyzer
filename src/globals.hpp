@@ -12,3 +12,10 @@ namespace GameConstants {
     static constexpr int MAX_PENALTIES = 4;
     static constexpr int PENALTY_VALUE = 5;
 }
+
+enum class Color { 
+    red = 0,
+    yellow = 1,
+    green = 2,
+    blue = 3
+};
