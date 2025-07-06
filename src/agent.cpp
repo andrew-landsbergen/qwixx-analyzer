@@ -15,7 +15,7 @@ std::optional<size_t> Human::make_move(bool first_action, std::span<const Move> 
         std::cout << "\nPlayer " << i << "\'s scorepad:\n" << state.scorepads[i] << '\n';
     }
     
-    std::cout << "Your scorepad:\n" << state.scorepads[m_position] << '\n';
+    std::cout << "Your scorepad (player " << m_position << "):\n" << state.scorepads[m_position] << '\n';
     std::string move_string = "";
     for (size_t i = 0; i < current_action_legal_moves.size(); ++i) {
        move_string += (std::to_string(i+1) + ": " + color_to_string[current_action_legal_moves[i].color]

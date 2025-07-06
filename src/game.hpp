@@ -7,6 +7,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <numeric>
 #include <optional>
 #include <span>
 #include <vector>
@@ -73,14 +74,18 @@ protected:
 struct State {
     std::vector<Scorepad> scorepads;
     std::bitset<GameConstants::NUM_ROWS> locks;
+    std::array<bool, GameConstants::NUM_ROWS> locked_rows;      // may want to remove bitset if we use this
     size_t curr_player;
+    int turn_count;
     int num_locks;
     bool is_terminal;
 
     State(size_t num_players, size_t starting_player) :
         scorepads(num_players, Scorepad()),
         locks(false),
+        locked_rows{false, false, false, false},
         curr_player(starting_player),
+        turn_count(0),
         num_locks(0),
         is_terminal(false)
         {};
@@ -90,19 +95,37 @@ struct GameData {
     std::vector<size_t> winners;
     std::vector<int> final_score;
     std::unique_ptr<State> final_state;
+    std::vector<double> p0_evaluation_history;
+    int num_turns;
 };
 
 class Game {
 public:
-    Game(std::vector<Agent*> players, bool human_active);
+    Game(std::vector<Agent*> players, bool human_active, bool use_evaluation);
     std::unique_ptr<GameData> run();
     std::vector<int> compute_score() const;
+    double evaluate_2p();
 
 protected:
     size_t m_num_players;
     std::unique_ptr<State> m_state;
     std::vector<Agent*> m_players;
     bool m_human_active;
+    bool m_use_evaluation;
+
+    //                                                         2  3  4  5  6  7  8  9  10 11 12 (or reverse)
+    static constexpr std::array<int, 11> m_frequency_counts = {1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1};
+    static constexpr int m_max_frequency_count_left = GameConstants::NUM_ROWS * std::accumulate(m_frequency_counts.begin(), m_frequency_counts.end(), 0);
+    
+    double m_score_diff_weight;
+    double m_freq_count_diff_weight;
+    double m_lock_progress_diff_weight;
+    double m_num_locks_weight;
+
+    double m_score_diff_scale_factor;
+    double m_freq_count_diff_scale_factor;
+    double m_lock_progress_diff_scale_factor;
+    double m_lock_progress_diff_bias;
 
     template <ActionType A, typename F>
     bool resolve_action(MoveContext& ctxt, F lock_added);

@@ -91,7 +91,20 @@ size_t generate_legal_moves(std::span<Move>& legal_moves, const std::span<Color>
     return num_legal_moves;
 }
 
-Game::Game(std::vector<Agent*> players, bool human_active) : m_num_players(players.size()), m_players(players), m_human_active(human_active) {    
+Game::Game(std::vector<Agent*> players, bool human_active, bool use_evaluation) 
+    : m_num_players(players.size()), 
+      m_players(players), 
+      m_human_active(human_active),
+      m_use_evaluation(use_evaluation),
+      m_score_diff_weight(0.25),
+      m_freq_count_diff_weight(0.40),
+      m_lock_progress_diff_weight(0.25),
+      m_num_locks_weight(0.10),
+      m_score_diff_scale_factor(30.0),
+      m_freq_count_diff_scale_factor(static_cast<double>(m_max_frequency_count_left)),
+      m_lock_progress_diff_scale_factor(11.0),
+      m_lock_progress_diff_bias(2.5) {    
+    
     if (m_num_players < GameConstants::MIN_PLAYERS || m_num_players > GameConstants::MAX_PLAYERS) {
         throw std::runtime_error("Invalid player count.");
     }
@@ -121,6 +134,111 @@ std::vector<int> Game::compute_score() const {
     return scores;
 }
 
+double Game::evaluate_2p() {
+    if (m_state->turn_count == 0) {
+        return 0.0;
+    }
+
+    int ramp_start = 7;
+    int ramp_end = 22;
+    if (m_state->turn_count >= ramp_start && m_state->turn_count <= ramp_end) {
+        const double range = static_cast<double>(ramp_end - ramp_start + 1);
+        m_score_diff_weight += (0.80 - 0.25) / range;
+        m_freq_count_diff_weight -= (0.40 - 0.05) / range;
+        m_lock_progress_diff_weight -= (0.25 - 0.05) / range;
+
+        m_score_diff_scale_factor -= (30.0 - 1.0) / range;
+        m_freq_count_diff_scale_factor -= (static_cast<double>(m_max_frequency_count_left) - 1.0) / range;
+        m_lock_progress_diff_scale_factor -= (11.0 - 1.0) / range;
+    }
+    
+    std::vector scores = compute_score();
+    const int score_diff = scores[0] - scores[1];
+    const double score_diff_term = m_score_diff_weight * std::max(-1.0, std::min(1.0, static_cast<double>(score_diff) / 30.0));
+
+    std::array<int, 2> freq_count_left = {0, 0};
+    for (size_t i = 0; i < 2; ++i) {
+        for (size_t j = 0; j < GameConstants::NUM_ROWS; ++j) {
+            if (m_state->locked_rows[j]) {
+                continue;
+            }
+
+            const size_t start = m_state->scorepads[i].get_rightmost_mark_index(static_cast<Color>(j)).value_or(0);
+            for (size_t k = start; k <= GameConstants::LOCK_INDEX; ++k) {
+                freq_count_left[i] += m_frequency_counts[k];
+            }
+        }
+    }
+
+    const int freq_count_diff = freq_count_left[0] - freq_count_left[1];
+    const double freq_count_diff_term = m_freq_count_diff_weight * std::max(-1.0, std::min(1.0, (static_cast<double>(freq_count_diff) / m_freq_count_diff_scale_factor)));
+
+    const double num_locks_term = m_num_locks_weight * m_state->num_locks;
+
+    auto get_lock_progress = [this](size_t player, Color color) {
+        std::tuple<int, double> progress = {0, 0.0};
+
+        if (m_state->locked_rows[static_cast<size_t>(color)]) {
+            return progress;
+        }
+
+        const size_t num_marks = static_cast<size_t>(m_state->scorepads[player].get_num_marks(color));
+        const size_t rightmost_index = m_state->scorepads[player].get_rightmost_mark_index(color).value_or(0);
+        const size_t spaces_left = GameConstants::LOCK_INDEX - rightmost_index + 1;
+        const size_t marks_needed = GameConstants::MIN_MARKS_FOR_LOCK - num_marks;
+
+        if (spaces_left < marks_needed) {
+            progress = {0, -3.0};
+            return progress;
+        }
+
+        if (num_marks >= 5) {
+            progress = {5, 3.0};
+            return progress;
+        }
+        
+        int freq_count_left = 0;
+        for (size_t i = rightmost_index + 1; i < GameConstants::LOCK_INDEX; ++i) {
+            freq_count_left += m_frequency_counts[i];
+        }
+
+        double freq_count_per_marks_needed = static_cast<double>(freq_count_left) / static_cast<double>(marks_needed);
+        
+        progress = {num_marks, std::max(-3.0, std::min(3.0, freq_count_per_marks_needed - 7.0))};
+        return progress;
+    };
+    
+    std::array<double, 2> lock_progress = {0.0, 0.0};
+    for (size_t i = 0; i < 2; ++i) {
+        const std::tuple<int, double> red_progress = get_lock_progress(i, Color::red);
+        const std::tuple<int, double> yellow_progress = get_lock_progress(i, Color::yellow);
+        const double top_progress = std::max(
+            static_cast<double>(std::get<0>(red_progress)) + std::get<1>(red_progress), 
+            static_cast<double>(std::get<0>(yellow_progress)) + std::get<1>(yellow_progress));
+        
+        const std::tuple<int, double> green_progress = get_lock_progress(i, Color::green);
+        const std::tuple<int, double> blue_progress = get_lock_progress(i, Color::blue);
+        const double bottom_progress = std::max(
+            static_cast<double>(std::get<0>(green_progress)) + std::get<1>(green_progress), 
+            static_cast<double>(std::get<1>(blue_progress)) + std::get<1>(blue_progress));
+
+        lock_progress[i] = std::max(-1.0, std::min(1.0, (top_progress + bottom_progress - m_lock_progress_diff_bias) / m_lock_progress_diff_scale_factor));
+    }
+
+    const double lock_progress_diff = lock_progress[0] - lock_progress[1];
+    const double lock_progress_diff_term = m_lock_progress_diff_weight * lock_progress_diff;
+
+    const double partial_sum = score_diff_term + freq_count_diff_term + lock_progress_diff_term;
+
+    /*std::cout << "Evaluation terms:\n"
+              << "Score difference: " << score_diff_term << '\n'
+              << "Frequency difference: " << freq_count_diff_term << '\n'
+              << "Lock progress difference: " << lock_progress_diff_term << '\n'
+              << "Number of locks: " << num_locks_term << '\n';*/
+
+    return (partial_sum > 0.0) ? (partial_sum + num_locks_term) : (partial_sum - num_locks_term); 
+}
+
 std::unique_ptr<GameData> Game::run() {        
     // Initial colors of the colored dice. Colored dice may be removed during the game.
     std::vector<Color> dice = { Color::red, Color::yellow, Color::green, Color::blue };
@@ -145,6 +263,7 @@ std::unique_ptr<GameData> Game::run() {
         // Check each lock and remove the corresponding dice
         for (size_t i = 0; i < GameConstants::NUM_ROWS; ++i) {
             if (m_state->locks.test(i)) {
+                m_state->locked_rows[i] = true;
                 Color color_to_remove = static_cast<Color>(i);
                 auto it = std::find(dice.begin(), dice.end(), color_to_remove);     // if the value is not found, it is a bug in the program
                 dice.erase(it);
@@ -154,7 +273,7 @@ std::unique_ptr<GameData> Game::run() {
             }
         }
 
-        // Reset the locks so that the next lock addition does not result in numLocks being incremented again for the current locks
+        // Reset the locks so that the next lock addition does not result in num_locks being incremented again for the current locks
         m_state->locks.reset();
     
         // Reconstruct spans for dice and rolls
@@ -176,8 +295,20 @@ std::unique_ptr<GameData> Game::run() {
     };
 
     bool active_player_made_move = false;
+
+    std::vector<double> p0_evaluation_history;
     
     while(!m_state->is_terminal) {                
+        if (m_use_evaluation) {
+            const double evaluation = evaluate_2p();
+            if (m_human_active) {
+                std::cout << "Evaluation for player 0: " << evaluation << '\n';
+            }
+            p0_evaluation_history.push_back(evaluation);
+        }
+
+        m_state->turn_count += 1;
+        
         roll_dice(ctxt.rolls);
 
         if (m_human_active) {
@@ -218,7 +349,12 @@ std::unique_ptr<GameData> Game::run() {
     size_t max_index = static_cast<size_t>(std::distance(final_score.begin(), max_it));
     std::vector<size_t> winners = { max_index };    // TODO: this does not report ties
 
-    std::unique_ptr<GameData> data = std::make_unique<GameData>(std::move(winners), std::move(final_score), std::move(m_state));
+    std::unique_ptr<GameData> data = std::make_unique<GameData>(
+        std::move(winners),
+        std::move(final_score),
+        std::move(m_state), 
+        std::move(p0_evaluation_history),
+        m_state->turn_count);
 
     return data;
 }
