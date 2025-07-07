@@ -226,7 +226,7 @@ double Game::evaluate_2p() {
     }
 
     const double lock_progress_diff = lock_progress[0] - lock_progress[1];
-    const double lock_progress_diff_term = m_lock_progress_diff_weight * lock_progress_diff;
+    const double lock_progress_diff_term = m_lock_progress_diff_weight * std::max(-1.0, std::min(1.0, lock_progress_diff));
 
     const double partial_sum = score_diff_term + freq_count_diff_term + lock_progress_diff_term;
 
@@ -345,9 +345,15 @@ std::unique_ptr<GameData> Game::run() {
 
     std::vector<int> final_score = compute_score();
 
-    auto max_it = std::max_element(final_score.begin(), final_score.end());
-    size_t max_index = static_cast<size_t>(std::distance(final_score.begin(), max_it));
-    std::vector<size_t> winners = { max_index };    // TODO: this does not report ties
+    int max_val = *std::max_element(final_score.begin(), final_score.end());
+    std::vector<size_t> winners;
+    for (size_t i = 0; i < final_score.size(); ++i) {
+        if (final_score[i] == max_val) {
+            winners.push_back(i);
+        }
+    }
+
+    p0_evaluation_history.push_back(std::find(winners.begin(), winners.end(), 0) == winners.end() ? -1.0 : 1.0);
 
     std::unique_ptr<GameData> data = std::make_unique<GameData>(
         std::move(winners),

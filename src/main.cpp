@@ -1,10 +1,73 @@
 #include <chrono>
+#include <cmath>
 #include <iostream>
 #include <sstream>
 #include <tuple>
 
 #include "agent.hpp"
 #include "game.hpp"
+#include "rng.hpp"
+
+double compute_duration(std::vector<std::vector<double>>& evaluation_histories) {
+    const double G = static_cast<double>(evaluation_histories.size());
+    
+    double acc = 0.0;
+    for (auto history : evaluation_histories) {
+        const double M_g = history.size() - 1;
+        acc += M_g;
+    }
+
+    const double M_pref = acc / G;
+
+    acc = 0.0;
+    for (auto history : evaluation_histories) {
+        const double M_g = history.size() - 1;
+        acc += std::abs(M_pref - M_g) / M_pref;
+    }
+
+    return acc / G;
+}
+
+double compute_lead_change(std::vector<std::vector<double>>& evaluation_histories) {
+    const double G = static_cast<double>(evaluation_histories.size());
+    
+    double acc = 0.0;
+    for (auto history : evaluation_histories) {
+        int num_lead_changes = 0;
+        for (auto it = history.begin() + 2; it != history.end(); ++it) {
+            num_lead_changes += (std::signbit(*it) != std::signbit(*(it-1))) ? 1 : 0;
+        }
+        const double M_g = history.size() - 1; 
+        acc += static_cast<double>(num_lead_changes) / (M_g - 1);
+    }
+    
+    return acc / G;
+}
+
+double compute_late_uncertainty(std::vector<std::vector<double>>& evaluation_histories) {
+    const int S = 100;
+    const double G = static_cast<double>(evaluation_histories.size());
+
+    double samples_acc = 0.0;
+    for (int s = 0; s < S; ++s) {
+        const double t = static_cast<double>(s) / static_cast<double>(S-1);
+        double games_acc = 0.0;
+        for (auto history : evaluation_histories) {
+            const double M_g = static_cast<double>(history.size());     // no minus one here, as we want to include the final evaluation of 1.0 or -1.0
+            const double tM_g = t * M_g;
+            const int floor_index = static_cast<int>(tM_g);
+            const int ceil_index = floor_index + 1;
+            const double move_fraction = tM_g - static_cast<double>(floor_index);
+            const double floor_eval = std::abs(history[floor_index]);
+            const double ceil_eval = std::abs(history[ceil_index]);
+            const double fractional_eval = floor_eval + (ceil_eval - floor_eval) * move_fraction;
+            games_acc += fractional_eval;
+        }
+        samples_acc += std::min(1.0, t - (games_acc / G));
+    }
+
+    return samples_acc / S;
+}
 
 int main() {
     std::cout << "\nWelcome to the Qwixx analyzer tool. The available agents are\n\n"
@@ -14,7 +77,7 @@ int main() {
               << "21: RushLocks\n"
               << "22: Computational\n"
               << "23: Human\n"
-              << "\nPlease input the number of simulations, followed by a 1 if you would like to use the evaluation function (0 otherwise), followed by a sequence of 2 to 5 numbers corresponding to the above numbers for each agent.\n"
+              << "\nPlease input the number of simulations, followed by a 1 if you would like to use the evaluation function (0 otherwise),\n\tfollowed by a sequence of 2 to 5 numbers corresponding to the above numbers for each agent.\n"
               << "Example: 10000 1 0 3 for 10000 simulations of Random vs. Greedy3Skip, where Random is evaluated.\n"
               << "Note that the evaluation function is only meaningful for 2 players, and will be disabled at higher player counts.\n\n";
     
@@ -31,7 +94,7 @@ int main() {
 
     std::vector<std::tuple<std::unique_ptr<Agent>, std::string>> players;
     int agent_selection = 0;
-    int num_agents = 0;
+    size_t num_agents = 0;
     bool human_active = false;
     while (num_agents < 5 && iss >> agent_selection) {
         if (agent_selection == 0) {
@@ -69,21 +132,24 @@ int main() {
         player_ptrs.push_back(std::get<0>(player).get());
     }
 
-    int num_p1_wins = 0;
-    int num_p2_wins = 0;
-    int p1_total_score = 0;
-    int p2_total_score = 0;
+    std::vector<double> num_wins_accum(num_agents);
+    std::vector<int> score_accum(num_agents);
+    int num_turns_accum = 0;
+    int min_turns = std::numeric_limits<int>::max();
+    int max_turns = std::numeric_limits<int>::min();
+
+    std::vector<std::vector<double>> evaluation_histories(num_simulations);
+
+    std::uniform_int_distribution<int> dist(0, num_simulations - 1);
+    int random_trial = dist(rng());
+    std::vector<double> saved_history;
 
     //int p1_mutation_score = 0;
     //int p2_mutation_score = 0;
-
-    int num_turns = 0;
-    int min_turns = std::numeric_limits<int>::max();
-    int max_turns = std::numeric_limits<int>::min();
     //int games_per_mutation = 500;
     
-    std::array<double, 24> p0_evaluation_by_turn{};
-    int num_games_tracked = 0;
+    //std::array<double, 24> p0_evaluation_by_turn{};
+    //int num_games_tracked = 0;
 
     for (int i = 0; i < num_simulations; ++i) {
         /*if (i % games_per_mutation == 0) {
@@ -93,70 +159,79 @@ int main() {
             p1_mutation_score = 0;
             p2_mutation_score = 0;
         }*/
-        
-        std::cout << "GAME " << (i + 1) << "\n\n";
 
         // TOOD: should consider reusing this object rather than repeatedly calling its constructor
         Game game = Game(player_ptrs, human_active, (static_cast<bool>(use_evaluation) && players.size() == 2));
         std::unique_ptr<GameData> stats = game.run();
 
-        // TODO: make this loop over all players, track win counts for each player, and track ties
-        std::cout << "Winner: " << (std::get<1>(players[stats.get()->winners[0]])) << '\n'
-                  << std::get<1>(players[0]) << " score: " << stats.get()->final_score[0] << '\n'
-                  << std::get<1>(players[1]) << " score: " << stats.get()->final_score[1] << "\n\n";
-
-        if (stats.get()->winners[0] == 0) {
-            ++num_p1_wins;
-        }
-        else if (stats.get()->winners[0] == 1) {
-            ++num_p2_wins;
+        if (i == random_trial) {
+            saved_history = stats.get()->p0_evaluation_history;
         }
 
-        p1_total_score += stats.get()->final_score[0];
-        p2_total_score += stats.get()->final_score[1];
+        for (size_t j = 0; j < num_agents; ++j) {
+            if (std::find(stats.get()->winners.begin(), stats.get()->winners.end(), j) != stats.get()->winners.end()) {
+                num_wins_accum[j] += 1.0 / static_cast<double>(stats.get()->winners.size());
+            }
 
-        if (stats.get()->winners[0] == 0 && stats.get()->p0_evaluation_history.size() == 23) {
+            score_accum[j] += stats.get()->final_score[j];
+        }
+
+        evaluation_histories[i] = std::move(stats.get()->p0_evaluation_history);
+
+        num_turns_accum += stats.get()->num_turns;
+        min_turns = std::min(min_turns, stats.get()->num_turns);
+        max_turns = std::max(max_turns, stats.get()->num_turns);
+
+        /*if (stats.get()->winners[0] == 0 && stats.get()->p0_evaluation_history.size() == 24) {
             for (size_t i = 0; i < 23; ++i) {
                 p0_evaluation_by_turn[i] += stats.get()->p0_evaluation_history[i];
             }
             num_games_tracked += 1;
-        }
-
-        min_turns = std::min(min_turns, stats.get()->num_turns);
-        max_turns = std::max(max_turns, stats.get()->num_turns);
+        }*/
 
         //p1_mutation_score += stats.get()->final_score[0];
         //p2_mutation_score += stats.get()->final_score[1];
-
-        //num_turns += stats.get()->num_turns;
     }
 
-    std::cout << std::get<1>(players[0]) << " wins: " << num_p1_wins << '\n'
-              << std::get<1>(players[1]) << " wins: " << num_p2_wins << "\n\n";
+    for (size_t i = 0; i < num_agents; ++i) {
+        std::cout << "Player " << i << " (" << std::get<1>(players[i]) << ") win rate: " << num_wins_accum[i] / static_cast<double>(num_simulations) << '\n';
+        std::cout << "Player " << i << " (" << std::get<1>(players[i]) << ") average score: " << static_cast<double>(score_accum[i]) / static_cast<double>(num_simulations) << '\n';
+    }
 
-    std::cout << std::get<1>(players[0]) << " average score: " << (p1_total_score / num_simulations) << '\n'
-              << std::get<1>(players[1]) << " average score: " << (p2_total_score / num_simulations) << '\n';
-
-    std::cout << "Average number of turns: " << static_cast<double>(num_turns) / static_cast<double>(num_simulations) << '\n';
+    std::cout << "Average number of turns: " << static_cast<double>(num_turns_accum) / static_cast<double>(num_simulations) << '\n';
     std::cout << "Maximum number of turns: " << max_turns << '\n';
     std::cout << "Minimum number of turns: " << min_turns << '\n';
 
-    if (num_games_tracked > 0) {
+    if (static_cast<bool>(use_evaluation)) {
+        const double duration_stat = compute_duration(evaluation_histories);
+        const double lead_change_stat = compute_lead_change(evaluation_histories);
+        const double late_uncertainty_stat = compute_late_uncertainty(evaluation_histories);
+
+        std::cout << "Duration statistic: " << duration_stat << '\n';
+        std::cout << "Lead change statistic: " << lead_change_stat << '\n';
+        std::cout << "Uncertainty (late) statistic: " << late_uncertainty_stat << '\n';
+
+        std::cout << "Randomly selected evaluation history (trial #" << random_trial << "):\n";
+        for (size_t i = 0; i < saved_history.size(); ++i) {
+            std::cout << i << ", " << saved_history[i] << '\n';
+        }
+    }
+
+    /*if (num_games_tracked > 0) {
         for (size_t i = 0; i < 23; ++i) {
             p0_evaluation_by_turn[i] /= static_cast<double>(num_games_tracked);
         }
-        p0_evaluation_by_turn[23] = 1.0;
-    }
+    }*/
 
-    std::cout << "Player 0 evaluation by turn (" << num_games_tracked << " won games with exactly 23 turns):\n";
+    /*std::cout << "Player 0 evaluation by turn (" << num_games_tracked << " won games with exactly 23 turns):\n";
     for (size_t i = 0; i < 24; ++i) {
         std::cout << i << ", " << p0_evaluation_by_turn[i] << '\n';
-    }
+    }*/
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;
 
-    std::cout << "Completed in " << duration.count() << " seconds\n";
+    //std::cout << "Completed in " << duration.count() << " seconds\n";
 
     return 0;
 }
