@@ -137,7 +137,7 @@ std::optional<size_t> GreedyImproved::make_move(bool first_action, std::span<con
 }
 
 std::optional<size_t> RushLocks::make_move(bool first_action, std::span<const Move> current_action_legal_moves, std::span<const Move> action_two_possible_moves, const State& state) {    
-    static std::array<int, GameConstants::NUM_CELLS_PER_ROW> roll_frequencies = {1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1};
+    static std::array<int, GameConstants::NUM_CELLS_PER_ROW> roll_frequencies = {3, 3, 4, 5, 6, 5, 4, 3, 3};
 
     if (first_action) {
         m_made_first_action_move = false;
@@ -247,19 +247,14 @@ std::optional<size_t> RushLocks::make_move(bool first_action, std::span<const Mo
 }
 
 Computational::Computational() : Agent(), m_basic_values{} {
+    static std::array<int, GameConstants::NUM_CELLS_PER_ROW> roll_frequencies = {3, 3, 4, 5, 6, 5, 4, 3, 3};
+    
     // TODO: double check this initialization method
-    int penalty = 12;
-    int frequency = 5;
+    int penalty = 10;
     for (size_t i = 0; i < m_basic_values.size(); ++i) {
         m_basic_values[i].base_penalty = penalty;
-        m_basic_values[i].roll_frequency = frequency;
+        m_basic_values[i].roll_frequency = 6 - roll_frequencies[i];
         --penalty;
-        if (i <= 5) {
-            --frequency;
-        }
-        else {
-                ++frequency;
-        }
     }
 }
 

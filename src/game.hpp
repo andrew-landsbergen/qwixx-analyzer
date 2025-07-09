@@ -113,8 +113,8 @@ protected:
     bool m_human_active;
     bool m_use_evaluation;
 
-    //                                                         2  3  4  5  6  7  8  9  10 11 12 (or reverse)
-    static constexpr std::array<int, 11> m_frequency_counts = {1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1};
+    //                                                                                      2/3  4  5  6  7  8  9  10 11/12 (or reverse)
+    static constexpr std::array<int, GameConstants::NUM_CELLS_PER_ROW> m_frequency_counts = {3, 3, 4, 5, 6, 5, 4, 3, 3};
     static constexpr int m_max_frequency_count_left = GameConstants::NUM_ROWS * std::accumulate(m_frequency_counts.begin(), m_frequency_counts.end(), 0);
     
     double m_score_diff_weight;
@@ -133,19 +133,36 @@ protected:
 
 constexpr int index_to_value(Color color, size_t index) {
     if (color == Color::red || color == Color::yellow) {
-        return static_cast<int>(index + 2);
+        return static_cast<int>(index + 3);
     }
     else {
-        return static_cast<int>(12 - index);
+        return static_cast<int>(11 - index);
     }
 };
 
 constexpr size_t value_to_index(Color color, int value) {
     if (color == Color::red || color == Color::yellow) {
-        return static_cast<size_t>(value) - 2;
+        if (value == 2) {
+            return 0;
+        }
+        else if (value == 12) {
+            return GameConstants::LOCK_INDEX;
+        }
+        else {
+            return static_cast<size_t>(value) - 3;
+        }
     }
     else {
-        return 12 - static_cast<size_t>(value);
+        if (value == 12) {
+            return 0;
+        }
+        else if (value == 2) {
+            return GameConstants::LOCK_INDEX;
+        }
+        else {
+            return 11 - static_cast<size_t>(value);
+        }
+        
     }
 };
 
