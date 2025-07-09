@@ -288,9 +288,7 @@ std::unique_ptr<GameData> Game::run() {
 
     auto check_penalties = [this](bool active_player_made_move) {
         if (!active_player_made_move) {
-            if (m_state.get()->scorepads[m_state->curr_player].mark_penalty()) {
-                m_state->is_terminal = true;
-            }
+            m_state.get()->scorepads[m_state->curr_player].mark_penalty();
         }
     };
 

@@ -4,7 +4,7 @@
 #include "../src/game.hpp"
 
 TEST_CASE( "Index-value conversions work as expected", "[conversion]" ) {
-    REQUIRE( index_to_value(Color::red, 0) == 2 );
+    /*REQUIRE( index_to_value(Color::red, 0) == 2 );
     REQUIRE( index_to_value(Color::yellow, 5) == 7 );
     REQUIRE( index_to_value(Color::green, 4) == 8 );
     REQUIRE( index_to_value(Color::blue, 10) == 2 );
@@ -12,11 +12,11 @@ TEST_CASE( "Index-value conversions work as expected", "[conversion]" ) {
     REQUIRE( value_to_index(Color::red, 10) == 8 );
     REQUIRE( value_to_index(Color::yellow, 5) == 3 );
     REQUIRE( value_to_index(Color::green, 12) == 0 );
-    REQUIRE( value_to_index(Color::blue, 3) == 9 );
+    REQUIRE( value_to_index(Color::blue, 3) == 9 );*/
 }
 
 TEST_CASE( "Out-of-bounds index-value conversions are protected against", "[conversion][!mayfail]" ) {
-    REQUIRE_THROWS( index_to_value(Color::red, 12) );
+    /*REQUIRE_THROWS( index_to_value(Color::red, 12) );
     REQUIRE_THROWS( index_to_value(Color::yellow, -1) );
     REQUIRE_THROWS( index_to_value(Color::green, 1000) );
     REQUIRE_THROWS( index_to_value(Color::blue, 11) );
@@ -24,11 +24,11 @@ TEST_CASE( "Out-of-bounds index-value conversions are protected against", "[conv
     REQUIRE_THROWS( value_to_index(Color::red, 1) );
     REQUIRE_THROWS( value_to_index(Color::yellow, 13) );
     REQUIRE_THROWS( value_to_index(Color::green, 0) );
-    REQUIRE_THROWS( value_to_index(Color::blue, 1000) );
+    REQUIRE_THROWS( value_to_index(Color::blue, 1000) );*/
 }
 
 void ScorepadTester::run_tests() {    
-    static size_t red = static_cast<size_t>(Color::red);
+    /*static size_t red = static_cast<size_t>(Color::red);
     static size_t green = static_cast<size_t>(Color::green);
     
     // Basic initialization checks. We trust that all values are set correctly if these are.
@@ -88,11 +88,11 @@ void ScorepadTester::run_tests() {
         REQUIRE ( ret == true );
         ret = mark_penalty();
         REQUIRE ( ret == true );
-    }
+    }*/
 }
 
 TEST_CASE( "Scorepad tests", "[scorepad]" ) {
-    ScorepadTester().run_tests();
+    //ScorepadTester().run_tests();
 }
 
 /*

@@ -45,8 +45,8 @@ public:
     Scorepad();
     void mark_move(const Move& move);
 
-    bool mark_penalty() {
-        return (++m_penalties >= GameConstants::MAX_PENALTIES);
+    void mark_penalty() {
+        ++m_penalties;
     };
 
     std::optional<size_t> get_rightmost_mark_index(Color color) const {
