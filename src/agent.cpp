@@ -169,16 +169,17 @@ std::optional<size_t> RushLocks::make_move(bool first_action, std::span<const Mo
 
             bool num_skips_ok = false;
 
-            if (moves[i].index == GameConstants::LOCK_INDEX || (num_marks + 1) >= GameConstants::MIN_MARKS_FOR_LOCK) {
+            if (moves[i].index == GameConstants::FIRST_LOCK_INDEX || (num_marks + 1) >= GameConstants::MIN_MARKS_FOR_LOCK_ONE
+            || moves[i].index == GameConstants::SECOND_LOCK_INDEX) {
                 num_skips_ok = true;
             }
             else {
                 if (move_color == m_top_row_fast || move_color == m_bottom_row_fast) {
                     int num_future_skips = 0;
-                    for (size_t j = moves[i].index + 1; j < GameConstants::LOCK_INDEX; ++j) {
+                    for (size_t j = moves[i].index + 1; j < GameConstants::FIRST_LOCK_INDEX; ++j) {
                         num_future_skips += roll_frequencies[j];
                     }
-                    if (num_future_skips / static_cast<int>(GameConstants::MIN_MARKS_FOR_LOCK - (num_marks + 1)) >= 5) {
+                    if (num_future_skips / static_cast<int>(GameConstants::MIN_MARKS_FOR_LOCK_ONE - (num_marks + 1)) >= 5) {
                         num_skips_ok = true;
                     }
                     else {
@@ -191,7 +192,11 @@ std::optional<size_t> RushLocks::make_move(bool first_action, std::span<const Mo
             }
 
             if (num_skips_ok && num_skips < std::get<0>(candidates[static_cast<size_t>(move_color)])) {
-                candidates[static_cast<size_t>(move_color)] = std::tuple(num_skips, num_marks, move_index == GameConstants::LOCK_INDEX, i);
+                candidates[static_cast<size_t>(move_color)] = std::tuple(
+                    num_skips, 
+                    num_marks, 
+                    (move_index == GameConstants::FIRST_LOCK_INDEX || move_index == GameConstants::SECOND_LOCK_INDEX), 
+                    i);
             }
         }
 
@@ -275,8 +280,8 @@ std::optional<size_t> Computational::make_move(bool first_action, std::span<cons
 
     auto lock_possible = [&](const Move move) {
         const int num_marks = state.scorepads[m_position].get_num_marks(move.color);
-        const int spaces_remaining = static_cast<int>((GameConstants::LOCK_INDEX - 1) - move.index);
-        return (num_marks + spaces_remaining + 1 >= GameConstants::MIN_MARKS_FOR_LOCK) ? true : false;
+        const int spaces_remaining = static_cast<int>((GameConstants::SECOND_LOCK_INDEX - 1) - move.index);
+        return (num_marks + spaces_remaining + 1 >= GameConstants::MIN_MARKS_FOR_LOCK_TWO) ? true : false;
     };
     
     auto get_value = [&](const Move move) {
@@ -292,7 +297,7 @@ std::optional<size_t> Computational::make_move(bool first_action, std::span<cons
         }
 
         const double base_value = static_cast<double>(num_marks + 1);
-        const double future_value_bonus = static_cast<double>((GameConstants::LOCK_INDEX - 1) - move_index) * 0.5 + (lock_possible(move) ? 0.5 : 0.0);
+        const double future_value_bonus = static_cast<double>((GameConstants::SECOND_LOCK_INDEX - 1) - move_index) * 0.5 + (lock_possible(move) ? 0.5 : 0.0);
         const double mark_frequency = static_cast<double>(m_basic_values[move_index].roll_frequency);
         const double score = base_value + future_value_bonus * m_epsilon - (std::pow(m_alpha, mark_frequency) * skipping_penalty);
 

@@ -30,8 +30,11 @@ void Scorepad::mark_move(const Move& move) {
     m_rows[color][index] = true;
     m_rightmost_mark_indices[color] = index;
     m_num_marks[color] += 1;
-    if (index == (GameConstants::LOCK_INDEX)) {
+    if (index == (GameConstants::FIRST_LOCK_INDEX)) {
         m_num_marks[color] += 1;
+    }
+    else if (index == (GameConstants::SECOND_LOCK_INDEX)) {
+        m_num_marks[color] += 2;
     }
 }
 
@@ -51,8 +54,9 @@ size_t generate_legal_moves(std::span<Move>& legal_moves, const std::span<Color>
         // Is the number to mark after the rightmost-marked number on the row?
         if (!rightmost_mark_index.has_value() || index_to_mark > rightmost_mark_index.value()) { 
             // Are we marking a lock? If so, have the minimum number of marks been placed to mark the lock?
-            if (index_to_mark < (GameConstants::LOCK_INDEX) 
-            || ((index_to_mark == GameConstants::LOCK_INDEX) && (scorepad.get_num_marks(color) >= GameConstants::MIN_MARKS_FOR_LOCK)))
+            if (index_to_mark < (GameConstants::FIRST_LOCK_INDEX) 
+            || ((index_to_mark == GameConstants::FIRST_LOCK_INDEX) && (scorepad.get_num_marks(color) >= GameConstants::MIN_MARKS_FOR_LOCK_ONE))
+            || ((index_to_mark == GameConstants::SECOND_LOCK_INDEX && (scorepad.get_num_marks(color) >= GameConstants::MIN_MARKS_FOR_LOCK_TWO))))
             {
                 legal_moves[num_legal_moves].color = color;
                 legal_moves[num_legal_moves].index = index_to_mark;
@@ -164,7 +168,7 @@ double Game::evaluate_2p() {
             }
 
             const size_t start = m_state->scorepads[i].get_rightmost_mark_index(static_cast<Color>(j)).value_or(0);
-            for (size_t k = start; k <= GameConstants::LOCK_INDEX; ++k) {
+            for (size_t k = start; k <= GameConstants::FIRST_LOCK_INDEX; ++k) {
                 freq_count_left[i] += m_frequency_counts[k];
             }
         }
@@ -184,8 +188,8 @@ double Game::evaluate_2p() {
 
         const size_t num_marks = static_cast<size_t>(m_state->scorepads[player].get_num_marks(color));
         const size_t rightmost_index = m_state->scorepads[player].get_rightmost_mark_index(color).value_or(0);
-        const size_t spaces_left = GameConstants::LOCK_INDEX - rightmost_index + 1;
-        const size_t marks_needed = GameConstants::MIN_MARKS_FOR_LOCK - num_marks;
+        const size_t spaces_left = GameConstants::FIRST_LOCK_INDEX - rightmost_index + 1;
+        const size_t marks_needed = GameConstants::MIN_MARKS_FOR_LOCK_ONE - num_marks;
 
         if (spaces_left < marks_needed) {
             progress = {0, -3.0};
@@ -198,7 +202,7 @@ double Game::evaluate_2p() {
         }
         
         int freq_count_left = 0;
-        for (size_t i = rightmost_index + 1; i < GameConstants::LOCK_INDEX; ++i) {
+        for (size_t i = rightmost_index + 1; i < GameConstants::FIRST_LOCK_INDEX; ++i) {
             freq_count_left += m_frequency_counts[i];
         }
 

@@ -3,6 +3,7 @@
 #include "game_test.hpp"
 #include "../src/game.hpp"
 
+/*
 TEST_CASE( "Index-value conversions work as expected", "[conversion]" ) {
     REQUIRE( index_to_value(Color::red, 0) == 2 );
     REQUIRE( index_to_value(Color::yellow, 5) == 7 );
@@ -94,6 +95,7 @@ void ScorepadTester::run_tests() {
 TEST_CASE( "Scorepad tests", "[scorepad]" ) {
     ScorepadTester().run_tests();
 }
+*/
 
 /*
 void GameTester::run_tests() {

@@ -195,7 +195,7 @@ bool Game::resolve_action(MoveContext& ctxt, F lock_added) {
             const std::optional<Move> move_opt = ctxt.action_one_registered_moves[i];
             if (move_opt.has_value()) {
                 m_state.get()->scorepads[i].mark_move(move_opt.value());
-                if (move_opt.value().index == GameConstants::LOCK_INDEX) {
+                if (move_opt.value().index >= GameConstants::FIRST_LOCK_INDEX) {
                     m_state->locks[static_cast<size_t>(move_opt.value().color)] = true;
                 }
             }
@@ -214,7 +214,7 @@ bool Game::resolve_action(MoveContext& ctxt, F lock_added) {
         if (move_index_opt.has_value()) {
             m_state.get()->scorepads[m_state->curr_player].mark_move(ctxt.current_action_legal_moves[move_index_opt.value()]);
             
-            if (ctxt.current_action_legal_moves[move_index_opt.value()].index == GameConstants::LOCK_INDEX) {
+            if (ctxt.current_action_legal_moves[move_index_opt.value()].index >= GameConstants::FIRST_LOCK_INDEX) {
                 m_state->locks[static_cast<size_t>(ctxt.current_action_legal_moves[move_index_opt.value()].color)] = true;
             }
             active_player_made_move = true;
