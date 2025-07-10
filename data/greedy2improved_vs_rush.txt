@@ -1,0 +1,28 @@
+Player 0 (Greedy2SkipImproved) win rate: 0.50445
+Player 0 (Greedy2SkipImproved) average score: 45.4097
+Player 1 (RushLocks) win rate: 0.49555
+Player 1 (RushLocks) average score: 46.2072
+Average number of turns: 14.1631
+Maximum number of turns: 29
+Minimum number of turns: 4
+Duration statistic: 0.198899
+Lead change statistic: 0.205176
+Uncertainty (late) statistic: 0.699214
+Randomly selected evaluation history (trial #9457):
+0, 0
+1, -0.0837121
+2, 0.395833
+3, 0.0652778
+4, -0.0123737
+5, -0.00719697
+6, 0.0109848
+7, 0.176641
+8, 0.180682
+9, -0.114899
+10, -0.277273
+11, -0.320455
+12, -0.314015
+13, -0.445202
+14, -0.290152
+15, -0.269318
+16, 1

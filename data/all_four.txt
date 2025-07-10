@@ -1,0 +1,11 @@
+Player 0 (Greedy1Skip) win rate: 0.0754
+Player 0 (Greedy1Skip) average score: 27.485
+Player 1 (Greedy2SkipImproved) win rate: 0.3025
+Player 1 (Greedy2SkipImproved) average score: 38.3825
+Player 2 (RushLocks) win rate: 0.3569
+Player 2 (RushLocks) average score: 39.5268
+Player 3 (Computational) win rate: 0.2652
+Player 3 (Computational) average score: 37.5029
+Average number of turns: 15.7135
+Maximum number of turns: 37
+Minimum number of turns: 5
