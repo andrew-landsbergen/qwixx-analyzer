@@ -288,7 +288,7 @@ std::optional<size_t> Computational::make_move(bool first_action, std::span<cons
         double skipping_penalty = 0;
         size_t skipped_spaces_start = rightmost_index.has_value() ? rightmost_index.value() + 1 : 0;
         for (size_t i = skipped_spaces_start; i < move_index; ++i) {
-            skipping_penalty += (m_basic_values[i].base_penalty * m_mu * std::pow(m_delta * m_sigma, m_basic_values[i].roll_frequency)); /// static_cast<double>(num_same_space_remaining);
+            skipping_penalty += ((m_basic_values[i].base_penalty + (lock_possible(move) ? 0 : -1)) * m_mu * std::pow(m_delta * m_sigma, m_basic_values[i].roll_frequency)); // static_cast<double>(num_same_space_remaining);
         }
 
         const double base_value = static_cast<double>(num_marks + 1);
