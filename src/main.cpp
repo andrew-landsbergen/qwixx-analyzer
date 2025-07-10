@@ -66,7 +66,7 @@ double compute_late_uncertainty(std::vector<std::vector<double>>& evaluation_his
         samples_acc += std::min(1.0, t - (games_acc / G));
     }
 
-    return samples_acc / S;
+    return 0.5 + (samples_acc / S);
 }
 
 int main() {
@@ -79,8 +79,7 @@ int main() {
               << "23: Human\n"
               << "\nPlease input the number of simulations, followed by a 1 if you would like to use the evaluation function (0 otherwise),\n\tfollowed by a sequence of 2 to 5 numbers corresponding to the above numbers for each agent.\n"
               << "Example: 10000 1 0 3 for 10000 simulations of Random vs. Greedy3Skip, where Random is evaluated.\n"
-              << "Note that the evaluation function is only meaningful for 2 players, and will be disabled at higher player counts.\n\n";
-    */
+              << "Note that the evaluation function is only meaningful for 2 players, and will be disabled at higher player counts.\n\n";*/
     // TOOD: validate input
     std::string line;
     std::getline(std::cin, line);

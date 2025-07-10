@@ -102,11 +102,10 @@ Game::Game(std::vector<Agent*> players, bool human_active, bool use_evaluation)
       m_use_evaluation(use_evaluation),
       m_score_diff_weight(0.25),
       m_freq_count_diff_weight(0.40),
-      m_lock_progress_diff_weight(0.25),
-      m_num_locks_weight(0.10),
-      m_score_diff_scale_factor(30.0),
-      m_freq_count_diff_scale_factor(static_cast<double>(m_max_frequency_count_left)),
-      m_lock_progress_diff_scale_factor(11.0),
+      m_lock_progress_diff_weight(0.35),
+      m_score_diff_scale_factor(20.0),
+      m_freq_count_diff_scale_factor(36.0),
+      m_lock_progress_diff_scale_factor(2.75),
       m_lock_progress_diff_bias(2.5) {    
     
     if (m_num_players < GameConstants::MIN_PLAYERS || m_num_players > GameConstants::MAX_PLAYERS) {
@@ -143,22 +142,22 @@ double Game::evaluate_2p() {
         return 0.0;
     }
 
-    int ramp_start = 7;
-    int ramp_end = 22;
+    const int ramp_start = 7;
+    const int ramp_end = 22;
+    const double range = static_cast<double>(ramp_end - ramp_start + 1);
     if (m_state->turn_count >= ramp_start && m_state->turn_count <= ramp_end) {
-        const double range = static_cast<double>(ramp_end - ramp_start + 1);
-        m_score_diff_weight += (0.80 - 0.25) / range;
-        m_freq_count_diff_weight -= (0.40 - 0.05) / range;
-        m_lock_progress_diff_weight -= (0.25 - 0.05) / range;
+        m_score_diff_weight += (0.75 - 0.25) / range;
+        m_freq_count_diff_weight -= (0.40 - 0.15) / range;
+        m_lock_progress_diff_weight -= (0.35 - 0.10) / range;
 
-        m_score_diff_scale_factor -= (30.0 - 1.0) / range;
-        m_freq_count_diff_scale_factor -= (static_cast<double>(m_max_frequency_count_left) - 1.0) / range;
-        m_lock_progress_diff_scale_factor -= (11.0 - 1.0) / range;
+        //m_score_diff_scale_factor -= (30.0 - 1.0) / range;
+        //m_freq_count_diff_scale_factor -= (static_cast<double>(m_max_frequency_count_left) - 1.0) / range;
+        //m_lock_progress_diff_scale_factor -= (11.0 - 1.0) / range;
     }
     
     std::vector scores = compute_score();
     const int score_diff = scores[0] - scores[1];
-    const double score_diff_term = m_score_diff_weight * std::max(-1.0, std::min(1.0, static_cast<double>(score_diff) / 30.0));
+    const double score_diff_term = m_score_diff_weight * std::max(-1.0, std::min(1.0, static_cast<double>(score_diff) / m_score_diff_scale_factor));
 
     std::array<int, 2> freq_count_left = {0, 0};
     for (size_t i = 0; i < 2; ++i) {
@@ -177,7 +176,7 @@ double Game::evaluate_2p() {
     const int freq_count_diff = freq_count_left[0] - freq_count_left[1];
     const double freq_count_diff_term = m_freq_count_diff_weight * std::max(-1.0, std::min(1.0, (static_cast<double>(freq_count_diff) / m_freq_count_diff_scale_factor)));
 
-    const double num_locks_term = m_num_locks_weight * m_state->num_locks;
+    //const double num_locks_term = m_num_locks_weight * m_state->num_locks;
 
     auto get_lock_progress = [this](size_t player, Color color) {
         std::tuple<int, double> progress = {0, 0.0};
@@ -232,7 +231,7 @@ double Game::evaluate_2p() {
     const double lock_progress_diff = lock_progress[0] - lock_progress[1];
     const double lock_progress_diff_term = m_lock_progress_diff_weight * std::max(-1.0, std::min(1.0, lock_progress_diff));
 
-    const double partial_sum = score_diff_term + freq_count_diff_term + lock_progress_diff_term;
+    return score_diff_term + freq_count_diff_term + lock_progress_diff_term;
 
     /*std::cout << "Evaluation terms:\n"
               << "Score difference: " << score_diff_term << '\n'
@@ -240,7 +239,7 @@ double Game::evaluate_2p() {
               << "Lock progress difference: " << lock_progress_diff_term << '\n'
               << "Number of locks: " << num_locks_term << '\n';*/
 
-    return (partial_sum > 0.0) ? (partial_sum + num_locks_term) : (partial_sum - num_locks_term); 
+    //return (partial_sum > 0.0) ? (partial_sum + num_locks_term) : (partial_sum - num_locks_term); 
 }
 
 std::unique_ptr<GameData> Game::run() {        
