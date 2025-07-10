@@ -1,39 +1,31 @@
-Player 0 (Greedy2SkipImproved) win rate: 0.3558
-Player 0 (Greedy2SkipImproved) average score: 61.5383
-Player 1 (Computational) win rate: 0.6442
-Player 1 (Computational) average score: 71.9196
-Average number of turns: 23.3372
-Maximum number of turns: 39
+Player 0 (Greedy2SkipImproved) win rate: 0.35115
+Player 0 (Greedy2SkipImproved) average score: 61.6711
+Player 1 (Computational) win rate: 0.64885
+Player 1 (Computational) average score: 72.2537
+Average number of turns: 23.3798
+Maximum number of turns: 38
 Minimum number of turns: 7
-Duration statistic: 0.167023
-Lead change statistic: 0.143168
-Uncertainty (late) statistic: 0.712649
-Randomly selected evaluation history (trial #9341):
+Duration statistic: 0.165737
+Lead change statistic: 0.142959
+Uncertainty (late) statistic: 0.679006
+Randomly selected evaluation history (trial #7417):
 0, 0
-1, -0.0201515
-2, -0.399798
-3, -0.591667
-4, -0.572222
-5, -0.356313
-6, -0.342424
-7, -0.213542
-8, -0.235243
-9, -0.181337
-10, -0.159375
-11, -0.105469
-12, -0.115451
-13, -0.0395833
-14, 0.0180556
-15, 0.00613952
-16, 0.0547822
-17, 0.0344145
-18, 0.108838
-19, 0.183523
-20, 0.127652
-21, 0.0559817
-22, -0.0632576
-23, -0.188258
-24, -0.316667
-25, -0.441667
-26, -0.479167
-27, -1
+1, -0.000252525
+2, 0.301212
+3, 0.198485
+4, 0.166667
+5, 0.2
+6, 0.120833
+7, 0.103906
+8, 0.170833
+9, 0.169271
+10, 0.1875
+11, 0.227517
+12, 0.178646
+13, 0.301563
+14, 0.214394
+15, 0.28166
+16, 0.125
+17, 0.1875
+18, 0.25
+19, 1
