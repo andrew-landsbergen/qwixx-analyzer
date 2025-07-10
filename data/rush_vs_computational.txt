@@ -1,0 +1,27 @@
+Player 0 (RushLocks) win rate: 0.39935
+Player 0 (RushLocks) average score: 61.5517
+Player 1 (Computational) win rate: 0.60065
+Player 1 (Computational) average score: 68.8199
+Average number of turns: 24.1688
+Maximum number of turns: 75
+Minimum number of turns: 5
+Duration statistic: 0.260292
+Lead change statistic: 0.143384
+Uncertainty (late) statistic: 0.714274
+Randomly selected evaluation history (trial #5900):
+0, 0
+1, -0.160606
+2, -0.192626
+3, -0.425
+4, -0.455556
+5, -0.231768
+6, 0.133889
+7, 0.370926
+8, 0.434442
+9, 0.39697
+10, 0.3828
+11, 0.330976
+12, 0.386111
+13, 0.362037
+14, 0.414815
+15, -1

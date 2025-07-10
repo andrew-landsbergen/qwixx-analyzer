@@ -1,0 +1,38 @@
+Player 0 (Computational) win rate: 0.50295
+Player 0 (Computational) average score: 71.1802
+Player 1 (Computational) win rate: 0.49705
+Player 1 (Computational) average score: 71.0633
+Average number of turns: 24.7091
+Maximum number of turns: 73
+Minimum number of turns: 7
+Duration statistic: 0.245454
+Lead change statistic: 0.157723
+Uncertainty (late) statistic: 0.736495
+Randomly selected evaluation history (trial #8796):
+0, 0
+1, -0.332879
+2, 0
+3, -0.295909
+4, -0.151515
+5, -0.134848
+6, -0.0777778
+7, -0.00925926
+8, -0.0939815
+9, 0.00347222
+10, -0.0833333
+11, 0.0405093
+12, 0.0569444
+13, 0.0724537
+14, -0.0432099
+15, 0.000694444
+16, 0.074537
+17, 0.0581019
+18, 0.380556
+19, 0.745062
+20, 0.64892
+21, 0.700694
+22, 0.714815
+23, 0.738152
+24, 0.845833
+25, 0.845833
+26, 1

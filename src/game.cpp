@@ -139,7 +139,7 @@ double Game::evaluate_2p() {
     }
 
     const int ramp_start = 7;
-    const int ramp_end = 22;
+    const int ramp_end = 24;
     const double range = static_cast<double>(ramp_end - ramp_start + 1);
     if (m_state->turn_count >= ramp_start && m_state->turn_count <= ramp_end) {
         m_score_diff_weight += (0.75 - 0.25) / range;
