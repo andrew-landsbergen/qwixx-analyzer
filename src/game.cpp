@@ -153,7 +153,7 @@ double Game::evaluate_2p() {
     
     std::vector scores = compute_score();
     const int score_diff = scores[0] - scores[1];
-    const double score_diff_term = m_score_diff_weight * std::max(-1.0, std::min(1.0, static_cast<double>(score_diff) / 30.0));
+    const double score_diff_term = m_score_diff_weight * std::max(-1.0, std::min(1.0, static_cast<double>(score_diff) / m_score_diff_scale_factor));
 
     std::array<int, 2> freq_count_left = {0, 0};
     for (size_t i = 0; i < 2; ++i) {
@@ -191,8 +191,8 @@ double Game::evaluate_2p() {
             return progress;
         }
 
-        if (num_marks >= 5) {
-            progress = {5, 3.0};
+        if (num_marks >= GameConstants::MIN_MARKS_FOR_LOCK) {
+            progress = {GameConstants::MIN_MARKS_FOR_LOCK, 3.0};
             return progress;
         }
         
@@ -203,7 +203,7 @@ double Game::evaluate_2p() {
 
         double freq_count_per_marks_needed = static_cast<double>(freq_count_left) / static_cast<double>(marks_needed);
         
-        progress = {num_marks, std::max(-3.0, std::min(3.0, freq_count_per_marks_needed - 7.0))};
+        progress = {num_marks, std::max(-3.0, std::min(3.0, freq_count_per_marks_needed - 8.25))};
         return progress;
     };
     
