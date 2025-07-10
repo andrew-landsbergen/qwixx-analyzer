@@ -1,0 +1,28 @@
+Player 0 (Greedy2SkipImproved) win rate: 0.36545
+Player 0 (Greedy2SkipImproved) average score: 53.7624
+Player 1 (Computational) win rate: 0.63455
+Player 1 (Computational) average score: 63.6087
+Average number of turns: 20.3773
+Maximum number of turns: 34
+Minimum number of turns: 7
+Duration statistic: 0.169731
+Lead change statistic: 0.151193
+Uncertainty (late) statistic: 0.67156
+Randomly selected evaluation history (trial #8220):
+0, 0
+1, -0.0541667
+2, -0.276667
+3, -0.159116
+4, -0.36601
+5, -0.605556
+6, -0.508929
+7, -0.435714
+8, -0.52877
+9, -0.616865
+10, -0.698512
+11, -0.729365
+12, -0.992361
+13, -0.571429
+14, -0.638907
+15, -0.672186
+16, -1
