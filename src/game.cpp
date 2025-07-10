@@ -153,7 +153,7 @@ double Game::evaluate_2p() {
     
     std::vector scores = compute_score();
     const int score_diff = scores[0] - scores[1];
-    const double score_diff_term = m_score_diff_weight * std::max(-1.0, std::min(1.0, static_cast<double>(score_diff) / 30.0));
+    const double score_diff_term = m_score_diff_weight * std::max(-1.0, std::min(1.0, static_cast<double>(score_diff) / m_score_diff_scale_factor));
 
     std::array<int, 2> freq_count_left = {0, 0};
     for (size_t i = 0; i < 2; ++i) {
