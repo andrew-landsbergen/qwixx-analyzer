@@ -1,26 +1,33 @@
-Player 0 (RushLocks) win rate: 0.99035
-Player 0 (RushLocks) average score: 48.6663
-Player 1 (Random) win rate: 0.00965
-Player 1 (Random) average score: 1.6808
-Average number of turns: 17.8637
-Maximum number of turns: 30
+Player 0 (RushLocks) win rate: 0.9922
+Player 0 (RushLocks) average score: 48.8198
+Player 1 (Random) win rate: 0.0078
+Player 1 (Random) average score: 1.7601
+Average number of turns: 17.8707
+Maximum number of turns: 29
 Minimum number of turns: 9
-Duration statistic: 0.135522
-Lead change statistic: 0.014468
-Uncertainty (late) statistic: 0.0256252
-Randomly selected evaluation history (trial #8759):
+Duration statistic: 0.134798
+Lead change statistic: 0.0146215
+Uncertainty (late) statistic: 0.31352
+Randomly selected evaluation history (trial #9199):
 0, 0
-1, 0.0510101
-2, 0.114899
-3, 0.327273
-4, 0.355051
-5, 0.405556
-6, 0.444949
-7, 0.718128
-8, 0.812107
-9, 0.836825
-10, 0.86071
-11, 0.884957
-12, 0.909673
-13, 0.935013
-14, 1
+1, -0.159545
+2, 0.301212
+3, 0.253788
+4, 0.677778
+5, 0.741667
+6, 0.686364
+7, 0.576894
+8, 0.75
+9, 0.782292
+10, 0.8
+11, 0.851042
+12, 0.766667
+13, 0.703125
+14, 0.7
+15, 0.716667
+16, 0.761458
+17, 0.546354
+18, 0.576042
+19, 0.694531
+20, 0.594271
+21, 1

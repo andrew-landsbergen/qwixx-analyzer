@@ -1,39 +1,33 @@
-Player 0 (Greedy2SkipImproved) win rate: 0.47535
-Player 0 (Greedy2SkipImproved) average score: 59.5474
-Player 1 (RushLocks) win rate: 0.52465
-Player 1 (RushLocks) average score: 61.2032
-Average number of turns: 22.4776
-Maximum number of turns: 38
-Minimum number of turns: 5
-Duration statistic: 0.178644
-Lead change statistic: 0.155914
-Uncertainty (late) statistic: 0.243324
-Randomly selected evaluation history (trial #6978):
+Player 0 (Greedy2SkipImproved) win rate: 0.46525
+Player 0 (Greedy2SkipImproved) average score: 59.3992
+Player 1 (RushLocks) win rate: 0.53475
+Player 1 (RushLocks) average score: 61.6606
+Average number of turns: 22.4359
+Maximum number of turns: 36
+Minimum number of turns: 6
+Duration statistic: 0.180203
+Lead change statistic: 0.15259
+Uncertainty (late) statistic: 0.717307
+Randomly selected evaluation history (trial #1957):
 0, 0
-1, -0.0113636
-2, 0.0568182
-3, 0.150253
-4, 0.0426768
-5, 0.113384
-6, 0.0227273
-7, 0.00177268
-8, -0.0162854
-9, -0.009275
-10, -0.011251
-11, 0.0527543
-12, 0.0571802
-13, 0.0502593
-14, 0.147931
-15, 0.502232
-16, 0.515041
-17, 0.581613
-18, 0.59523
-19, 0.498794
-20, 0.323125
-21, 0.450521
-22, 0.64
-23, 0.506667
-24, 0.4
-25, 0.133333
-26, -0.363333
-27, -1
+1, 0.0826263
+2, -0.0242929
+3, 0.0136869
+4, -0.230556
+5, 0.0782828
+6, -0.0356061
+7, 0.126823
+8, 0.164236
+9, 0.0442708
+10, 0.040625
+11, -0.0224826
+12, 0.194271
+13, -0.0239583
+14, -0.00662879
+15, -0.128622
+16, -0.223958
+17, -0.260417
+18, -0.357986
+19, -0.7
+20, -0.576389
+21, -1
