@@ -60,23 +60,8 @@ int main() {
     int random_sim = dist(rng());
     std::vector<double> saved_history;
 
-    //int p1_mutation_score = 0;
-    //int p2_mutation_score = 0;
-    //int games_per_mutation = 500;
-    
-    //std::array<double, 24> p0_evaluation_by_turn{};
-    //int num_games_tracked = 0;
-
     // Main program loop
     for (int i = 0; i < num_simulations; ++i) {
-        /*if (i % games_per_mutation == 0) {
-            bool final_mutation = (i + games_per_mutation >= num_simulations) ? true : false;
-            player_ptrs[0]->mutate(static_cast<double>(p1_mutation_score) / static_cast<double>(games_per_mutation), final_mutation);
-            player_ptrs[1]->mutate(static_cast<double>(p2_mutation_score) / static_cast<double>(games_per_mutation), final_mutation);
-            p1_mutation_score = 0;
-            p2_mutation_score = 0;
-        }*/
-
         // Construct and run a new game
         Game game = Game(player_ptrs, human_active, (static_cast<bool>(use_evaluation) && players.size() == 2));
         std::unique_ptr<GameData> stats = game.run();
@@ -102,16 +87,6 @@ int main() {
         num_turns_accum += stats.get()->num_turns;
         min_turns = std::min(min_turns, stats.get()->num_turns);
         max_turns = std::max(max_turns, stats.get()->num_turns);
-
-        /*if (stats.get()->winners[0] == 0 && stats.get()->p0_evaluation_history.size() == 24) {
-            for (size_t i = 0; i < 23; ++i) {
-                p0_evaluation_by_turn[i] += stats.get()->p0_evaluation_history[i];
-            }
-            num_games_tracked += 1;
-        }*/
-
-        //p1_mutation_score += stats.get()->final_score[0];
-        //p2_mutation_score += stats.get()->final_score[1];
     }
 
     // Print win rates and average scores for each player
@@ -142,17 +117,6 @@ int main() {
             std::cout << i << ", " << saved_history[i] << '\n';
         }
     }
-
-    /*if (num_games_tracked > 0) {
-        for (size_t i = 0; i < 23; ++i) {
-            p0_evaluation_by_turn[i] /= static_cast<double>(num_games_tracked);
-        }
-    }*/
-
-    /*std::cout << "Player 0 evaluation by turn (" << num_games_tracked << " won games with exactly 23 turns):\n";
-    for (size_t i = 0; i < 24; ++i) {
-        std::cout << i << ", " << p0_evaluation_by_turn[i] << '\n';
-    }*/
 
     // Stop timer and print execution time
     auto end = std::chrono::high_resolution_clock::now();

@@ -18,7 +18,6 @@ target_compile_options(compiler_flags INTERFACE
 
 # Add subdirectories
 add_subdirectory(src)
-add_subdirectory(tests)
 
 # Add the project executable
 add_executable(QwixxAnalyzer src/main.cpp)

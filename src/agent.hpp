@@ -44,7 +44,6 @@ public:
      * represents passing.
      */
     virtual std::optional<size_t> make_move(bool first_action, std::span<const Move> current_action_legal_moves, std::span<const Move> action_two_possible_moves, const State& state) = 0;
-    virtual void mutate(double new_average_score, bool final_mutation) { (void) new_average_score, (void) final_mutation; };
 
     /**
      * @brief Sets the agent's position in the game.
@@ -170,14 +169,6 @@ class Computational : public Agent {
 public:
     Computational();
 
-    enum class Param {
-        alpha,
-        mu,
-        delta,
-        sigma,
-        epsilon
-    };
-
     /**
      * @struct MoveData
      * @brief Contains values representing the base penalty and roll frequency of a move.
@@ -192,7 +183,6 @@ public:
      * @details See the documentation for make_move() in the Agent base class.
      */
     std::optional<size_t> make_move(bool first_action, std::span<const Move> current_action_legal_moves, std::span<const Move> action_two_possible_moves, const State& state) override;
-    void mutate(double new_average_score, bool final_mutation) override;
 protected:
     bool m_made_first_action_move = false;      //< Used by the agent to check if it made a move during the first action.
     double m_alpha = 0.949905;      //< The alpha parameter is a discount factor for losing access to the move in the future.
@@ -200,7 +190,5 @@ protected:
     double m_delta = 0.823284;      //< The delta parameter is a discount factor for losing access to moves to the left of the current move in the future.
     double m_sigma = 0.921692;      //< The sigma parameter is a discount factor for losing access to moves to the left of the current move in the future.
     double m_epsilon = 0.71407;     //< The epsilon parameter is an estiamte of the total fraction of all spaces on the scorepad that will be filled by the game's end.
-    double m_average_score = 79.78;
     std::array<MoveData, GameConstants::NUM_CELLS_PER_ROW> m_basic_values;  //< Holds the basic values (base penalty and roll frequency) for each move.
-    std::optional<std::tuple<Param, double>> m_last_mutation = std::nullopt;
 };
