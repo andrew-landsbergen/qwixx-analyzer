@@ -1,0 +1,36 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Qwixx Analyzer
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Andrew
+    family-names: Landsbergen
+    email: alandsbergen2000@gmail.com
+    affiliation: Yale University
+repository-code: 'https://github.com/andrew-landsbergen/qwixx-analyzer'
+abstract: >-
+  Source code used for Andrew Landsbergen's senior thesis
+  for his Bachelor of Science in Computer Science from Yale
+  University. This project is a tool that helps to analyze
+  the dice game Qwixx.
+keywords:
+  - qwixx
+  - balancing
+  - board games
+  - agent-assisted
+  - AI-assisted
+  - board game balancing
+  - artificial intelligence
+  - computational intelligence
+  - ticket to ride
+  - dominion
+  - cameron browne
+license: Unlicense
+commit: 26efbbe7ce6d67d5808e04cb95eca5033d231f4f
+version: 1.0.0
+date-released: '2025-08-15'
